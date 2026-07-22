@@ -1,7 +1,7 @@
-import "./lib/error-capture";
+import "./server/error-capture";
 
-import { consumeLastCapturedError } from "./lib/error-capture";
-import { renderErrorPage } from "./lib/error-page";
+import { consumeLastCapturedError } from "./server/error-capture";
+import { renderErrorPage } from "./server/error-page";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -12,7 +12,7 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => ((m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry)),
+      (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
     );
   }
   return serverEntryPromise;
@@ -62,7 +62,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
     return response;
   }
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  logServerError(consumeLastCapturedError() ?? new Error(`SSR response ${response.status}`));
   return brandedErrorResponse();
 }
 
@@ -71,10 +71,41 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response), request);
     } catch (error) {
-      console.error(error);
-      return brandedErrorResponse();
+      logServerError(error);
+      return withSecurityHeaders(brandedErrorResponse(), request);
     }
   },
 };
+
+function logServerError(error: unknown) {
+  console.error(
+    JSON.stringify({
+      event: "ssr_request_failed",
+      errorType: error instanceof Error ? error.name : "UnknownError",
+      at: new Date().toISOString(),
+    }),
+  );
+}
+
+function withSecurityHeaders(response: Response, request: Request) {
+  const headers = new Headers(response.headers);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+  headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  );
+  if (new URL(request.url).protocol === "https:") {
+    headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}

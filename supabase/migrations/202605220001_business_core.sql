@@ -107,32 +107,32 @@ using (active = true);
 drop policy if exists "owner manages services" on public.services;
 create policy "owner manages services"
 on public.services for all
-using ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner')
-with check ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner');
+using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
 drop policy if exists "owner manages products" on public.products;
 create policy "owner manages products"
 on public.products for all
-using ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner')
-with check ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner');
+using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
 drop policy if exists "owner manages barbers" on public.barbers;
 create policy "owner manages barbers"
 on public.barbers for all
-using ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner')
-with check ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner');
+using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
 drop policy if exists "owner manages appointments" on public.appointments;
 create policy "owner manages appointments"
 on public.appointments for all
-using ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner')
-with check ((auth.jwt() -> 'user_metadata' ->> 'role') = 'owner');
+using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
 drop policy if exists "barber reads own appointments" on public.appointments;
 create policy "barber reads own appointments"
 on public.appointments for select
 using (
-  (auth.jwt() -> 'user_metadata' ->> 'role') = 'barber'
+  (auth.jwt() -> 'app_metadata' ->> 'role') = 'barber'
   and barber_id::text in (select id::text from public.barbers where access_user_id::text = auth.uid()::text)
 );
 
@@ -140,14 +140,12 @@ drop policy if exists "client reads own appointments" on public.appointments;
 create policy "client reads own appointments"
 on public.appointments for select
 using (
-  (auth.jwt() -> 'user_metadata' ->> 'role') = 'client'
-  and customer_id::text = auth.uid()::text
+  customer_id = auth.uid()
 );
 
 drop policy if exists "client creates own appointments" on public.appointments;
 create policy "client creates own appointments"
 on public.appointments for insert
 with check (
-  (auth.jwt() -> 'user_metadata' ->> 'role') = 'client'
-  and customer_id::text = auth.uid()::text
+  customer_id = auth.uid()
 );
