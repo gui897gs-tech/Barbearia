@@ -68,6 +68,11 @@ A interface usa temas claro/escuro/sistema, fontes variáveis auto-hospedadas e 
 
 O adaptador Nitro gera o SSR e as funções compatíveis com Vercel. O arquivo `vercel.json` fixa a detecção do framework como TanStack Start; a publicação pode ser feita com `vercel --prod` depois de configurar as variáveis públicas do Supabase no projeto.
 
+- Produção: [kings-barber-management.vercel.app](https://kings-barber-management.vercel.app)
+- Entrega no GitHub: [PR #1](https://github.com/gui897gs-tech/Barbearia/pull/1)
+
+O deployment atual foi publicado pela CLI. Para disparar novos deploys automaticamente por `push`, ainda é necessário conceder ao GitHub App da Vercel acesso ao repositório `gui897gs-tech/Barbearia` e conectá-lo ao projeto `kings-barber-management`.
+
 ## Segurança de dependências
 
 `npm audit` e `npm audit --omit=dev` não apontam vulnerabilidades. A migração do adaptador Cloudflare para Nitro removeu a cadeia Miniflare → Sharp anteriormente afetada por quatro alertas altos.

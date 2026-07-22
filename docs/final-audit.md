@@ -33,6 +33,9 @@ Data: 22 de julho de 2026
 - `npm audit` e `npm audit --omit=dev`: zero vulnerabilidades.
 - Inspeção visual do login e dos três workspaces em desktop/mobile, nos temas claro e escuro, nos artefatos Playwright.
 - O backend dos E2E autenticados é interceptado no navegador com respostas que seguem os contratos REST/RPC do Supabase. Os testes exercitam leitura e mutações de status, configuração e reserva; não substituem a validação das políticas RLS reais.
+- Deploy de produção Nitro/Vercel: [kings-barber-management.vercel.app](https://kings-barber-management.vercel.app).
+- Smoke test de produção aprovado em desktop e mobile: SSR e assets HTTP 200, CSP/HSTS presentes, tema escuro funcional, rota protegida redirecionando e nenhum erro de console.
+- Código publicado na branch `agent/rebuild-barbershop-platform`, commit `42fdb56`, com entrega pelo [PR #1](https://github.com/gui897gs-tech/Barbearia/pull/1).
 
 ## Limitações honestas do modelo atual
 
@@ -67,6 +70,7 @@ Essas tarefas não podem ser declaradas concluídas sem um projeto Supabase ou a
 - **Incompleto:** migrações 001–009 e Edge Functions ainda não foram aplicadas em um ambiente Supabase fornecido.
 - **Não comprovado:** a matriz RLS owner/barber/client, os triggers de métricas e a constraint de concorrência foram revisados em SQL, mas não executados contra PostgreSQL real neste workspace.
 - **Não comprovado:** convite, revogação, reserva simultânea e cancelamento no limite de antecedência precisam de teste integrado real.
+- **Automação pendente:** o deployment está público, mas o GitHub App da Vercel ainda não tem acesso ao repositório; futuros deploys precisam da CLI até essa permissão ser concedida.
 
 ### Limitações funcionais conhecidas
 

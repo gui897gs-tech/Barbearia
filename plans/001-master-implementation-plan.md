@@ -118,9 +118,9 @@ Gate: pipeline verde, build validado e evidência visual/funcional de cada requi
 
 - [x] Migrar o adaptador de Cloudflare para Nitro/Vercel.
 - [x] Revalidar build SSR, audit e E2E depois da migração de runtime.
-- [ ] Publicar a branch no GitHub e abrir o PR de entrega.
-- [ ] Vincular e publicar o projeto na Vercel.
-- [ ] Executar smoke test no domínio de produção e registrar a URL.
+- [x] Publicar a branch no GitHub e abrir o PR de entrega.
+- [x] Vincular e publicar o projeto na Vercel.
+- [x] Executar smoke test no domínio de produção e registrar a URL.
 
 Gate: código rastreável no GitHub, deployment acessível por HTTPS e pendências externas explicitadas.
 
