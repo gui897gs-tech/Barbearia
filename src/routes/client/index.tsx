@@ -1,90 +1,283 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AppShell, PageHeader } from "@/components/AppShell";
-import { barbers, services, clientHistory, fmtBRL } from "@/lib/sample-data";
-import { Calendar, Heart, Sparkles, ArrowRight } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ArrowRight, Calendar, Loader2, Sparkles, UserRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AppShell, PageHeader } from "@/components/layout/app-shell";
+import { formatCurrency } from "@/shared/utils/format";
+import {
+  AppointmentRecord,
+  cancelClientAppointment,
+  EmployeeRecord,
+  listClientAppointments,
+  listEmployees,
+  listServices,
+  ServiceRecord,
+} from "@/data/repositories/business-repository";
+import { useAuth } from "@/features/auth/auth-context";
+import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 
 export const Route = createFileRoute("/client/")({
-  head: () => ({ meta: [{ title: "Maison Lame — Agende seu ritual" }] }),
-  component: () => (
+  head: () => ({ meta: [{ title: "King's Barber — Sua agenda" }] }),
+  component: ClientDashboard,
+});
+
+function ClientDashboard() {
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
+  const [barbers, setBarbers] = useState<EmployeeRecord[]>([]);
+  const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [canceling, setCanceling] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    setLoading(true);
+    void Promise.all([listClientAppointments(user.id), listEmployees(), listServices()])
+      .then(([appointmentRows, employeeRows, serviceRows]) => {
+        if (!active) return;
+        setAppointments(appointmentRows);
+        setBarbers(employeeRows.filter((employee) => employee.active !== false));
+        setServices(serviceRows.filter((service) => service.active !== false));
+      })
+      .catch(notifyError)
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const upcoming = useMemo(
+    () =>
+      appointments
+        .filter(
+          (appointment) =>
+            appointment.status === "Confirmado" &&
+            appointmentDate(appointment).getTime() > Date.now(),
+        )
+        .sort((a, b) => appointmentDate(a).getTime() - appointmentDate(b).getTime())[0],
+    [appointments],
+  );
+  const completed = appointments.filter(
+    (appointment) => appointment.status === "Concluído" || appointment.status === "Concluido",
+  );
+  const totalSpent = completed.reduce((sum, appointment) => sum + appointment.price, 0);
+  const firstName = String(user?.user_metadata?.full_name || "Cliente").split(" ")[0];
+
+  async function handleCancel() {
+    if (!upcoming || !user) return;
+    setCanceling(true);
+    try {
+      await cancelClientAppointment(upcoming.id, user.id);
+      setAppointments((items) =>
+        items.map((item) =>
+          item.id === upcoming.id ? { ...item, status: "Cancelado pelo cliente" } : item,
+        ),
+      );
+      notifySuccess("Agendamento cancelado.");
+    } catch (error) {
+      notifyError(error);
+    } finally {
+      setCanceling(false);
+    }
+  }
+
+  return (
     <AppShell role="client">
       <PageHeader
-        eyebrow="Bem-vindo, Tiago"
-        title="A cadeira espera por você."
-        subtitle="Agende seu próximo ritual na Maison Lame."
+        eyebrow={`Bem-vindo, ${firstName}`}
+        title="Seu próximo corte começa aqui."
+        subtitle="Consulte sua agenda e reserve um horário sem precisar ligar."
         action={
-          <Link to="/client/book" className="inline-flex items-center gap-2 rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground gold-glow">
+          <Link
+            to="/client/book"
+            className="inline-flex items-center gap-2 rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground gold-glow"
+          >
             <Sparkles className="h-4 w-4" /> Agendar agora
           </Link>
         }
       />
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 glass-card rounded-3xl p-8 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-40" style={{ background: "radial-gradient(500px 300px at 80% 20%, rgba(212,166,58,0.25), transparent 60%)" }} />
-          <div className="relative">
-            <div className="text-[11px] uppercase tracking-[0.25em] text-gold">Próximo agendamento</div>
-            <div className="font-display text-3xl mt-2">Corte Signature com Lucas</div>
-            <div className="text-muted-foreground mt-1">Sexta, 22 de Maio · 14:00</div>
-            <div className="flex flex-wrap items-center gap-3 mt-6">
-              <button className="rounded-xl gradient-gold px-4 py-2 text-sm font-medium text-primary-foreground">Reagendar</button>
-              <button className="rounded-xl border border-border px-4 py-2 text-sm hover:border-[color:var(--gold)]/50 transition">Cancelar</button>
-            </div>
-          </div>
+      {loading ? (
+        <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-gold" /> Carregando sua agenda
         </div>
-        <div className="glass-card rounded-3xl p-6">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-gold"><Heart className="h-3.5 w-3.5"/> Barbeiro favorito</div>
-          <img src={barbers[0].image} className="h-24 w-24 rounded-full object-cover ring-2 ring-[color:var(--gold)]/50 mx-auto mt-6" />
-          <div className="text-center font-display text-xl mt-3">{barbers[0].name}</div>
-          <div className="text-center text-xs text-muted-foreground">{barbers[0].title}</div>
-          <Link to="/client/book" className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-[color:var(--gold)]/40 py-2 text-xs text-gold hover:bg-[color:var(--gold)]/10 transition">
-            Agendar com Lucas <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="font-display text-xl">Rituais populares</div>
-          <Link to="/client/book" className="text-xs text-gold">Ver todos</Link>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {services.slice(0,4).map((s) => (
-            <Link to="/client/book" key={s.id} className="glass-card rounded-2xl p-5 hover:gold-glow transition group">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-gold">{s.category}</div>
-              <div className="font-display text-lg mt-2">{s.name}</div>
-              <div className="mt-4 flex items-end justify-between">
-                <div className="text-2xl font-display text-gradient-gold">{fmtBRL(s.price)}</div>
-                <div className="text-xs text-muted-foreground">{s.duration} min</div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-8 grid lg:grid-cols-2 gap-6">
-        <div className="glass-card rounded-2xl p-6">
-          <div className="font-display text-lg mb-4 flex items-center gap-2"><Calendar className="h-4 w-4 text-gold"/> Visitas recentes</div>
-          <div className="divide-y divide-border">
-            {clientHistory.slice(0,3).map((h) => (
-              <div key={h.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium">{h.service}</div>
-                  <div className="text-xs text-muted-foreground">{h.date} · {h.barber}</div>
+      ) : (
+        <>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(17rem,0.7fr)]">
+            <section className="glass-card relative overflow-hidden rounded-3xl p-6 sm:p-8">
+              <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-[color:var(--gold)]/10 blur-3xl" />
+              <div className="relative">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold">
+                  Próximo agendamento
                 </div>
-                <div className="text-sm text-gold">{fmtBRL(h.price)}</div>
+                {upcoming ? (
+                  <>
+                    <h2 className="mt-3 max-w-xl font-display text-3xl sm:text-4xl">
+                      {upcoming.service} com {upcoming.barber}
+                    </h2>
+                    <p className="mt-2 text-sm capitalize text-muted-foreground sm:text-base">
+                      {formatAppointment(upcoming)}
+                    </p>
+                    <div className="mt-7 flex flex-wrap items-center gap-3">
+                      <Link
+                        to="/client/book"
+                        className="rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground"
+                      >
+                        Escolher outro horário
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        disabled={canceling}
+                        className="inline-flex items-center gap-2 rounded-xl border border-destructive/35 px-4 py-2.5 text-sm text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+                      >
+                        {canceling && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Cancelar
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-8">
+                    <h2 className="font-display text-3xl">Sua agenda está livre.</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Escolha um profissional e reserve o melhor horário para você.
+                    </p>
+                  </div>
+                )}
               </div>
-            ))}
+            </section>
+
+            <section className="glass-card rounded-3xl p-6">
+              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-gold">
+                <UserRound className="h-3.5 w-3.5" /> Equipe disponível
+              </div>
+              {barbers[0] ? (
+                <>
+                  <img
+                    src={barbers[0].image}
+                    alt={`Foto de ${barbers[0].name}`}
+                    className="mx-auto mt-6 h-24 w-24 rounded-full object-cover ring-2 ring-[color:var(--gold)]/45"
+                  />
+                  <div className="mt-3 text-center font-display text-xl">{barbers[0].name}</div>
+                  <div className="text-center text-xs text-muted-foreground">
+                    {barbers[0].title}
+                  </div>
+                  <Link
+                    to="/client/book"
+                    className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-[color:var(--gold)]/35 py-2.5 text-xs text-gold transition hover:bg-[color:var(--gold)]/10"
+                  >
+                    Ver horários <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </>
+              ) : (
+                <p className="mt-6 text-sm text-muted-foreground">
+                  Nenhum profissional disponível.
+                </p>
+              )}
+            </section>
           </div>
-        </div>
-        <div className="glass-card rounded-2xl p-6 relative overflow-hidden">
-          <div className="text-[11px] uppercase tracking-[0.25em] text-gold">Fidelidade Maison</div>
-          <div className="font-display text-2xl mt-2">3 visitas para o próximo ritual</div>
-          <div className="mt-4 h-2 rounded-full bg-accent overflow-hidden">
-            <div className="h-full gradient-gold" style={{ width: "70%" }} />
+
+          <section className="mt-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-2xl">Serviços disponíveis</h2>
+              <Link to="/client/book" className="text-xs font-medium text-gold">
+                Ver agenda
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {services.slice(0, 4).map((service) => (
+                <Link
+                  to="/client/book"
+                  key={service.id}
+                  className="glass-card group rounded-2xl p-5 transition hover:-translate-y-0.5 hover:border-[color:var(--gold)]/45"
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold">
+                    {service.category}
+                  </div>
+                  <h3 className="mt-2 font-display text-xl">{service.name}</h3>
+                  <div className="mt-5 flex items-end justify-between">
+                    <div className="font-display text-2xl text-gradient-gold">
+                      {formatCurrency(service.price)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{service.duration} min</div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <section className="glass-card rounded-2xl p-6">
+              <h2 className="mb-4 flex items-center gap-2 font-display text-xl">
+                <Calendar className="h-4 w-4 text-gold" /> Atividade recente
+              </h2>
+              {appointments.length ? (
+                <div className="divide-y divide-border">
+                  {appointments.slice(0, 3).map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between gap-4 py-3"
+                    >
+                      <div>
+                        <div className="text-sm font-medium">{appointment.service}</div>
+                        <div className="text-xs capitalize text-muted-foreground">
+                          {formatAppointment(appointment)}
+                        </div>
+                      </div>
+                      <div className="text-sm text-gold">{formatCurrency(appointment.price)}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma atividade registrada.</p>
+              )}
+            </section>
+
+            <section className="glass-card rounded-2xl p-6">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold">
+                Seu histórico
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-4">
+                <Metric label="Visitas concluídas" value={String(completed.length)} />
+                <Metric label="Total investido" value={formatCurrency(totalSpent)} />
+              </div>
+              <Link
+                to="/client/history"
+                className="mt-5 inline-flex items-center gap-2 text-xs font-medium text-gold"
+              >
+                Abrir histórico <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </section>
           </div>
-          <div className="mt-2 text-xs text-muted-foreground">7 de 10 selos conquistados</div>
-        </div>
-      </div>
+        </>
+      )}
     </AppShell>
-  ),
-});
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-background/35 p-4">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-2 font-display text-2xl">{value}</div>
+    </div>
+  );
+}
+
+function appointmentDate(appointment: AppointmentRecord) {
+  if (appointment.starts_at) return new Date(appointment.starts_at);
+  const [year, month, day] = (appointment.appointment_date ?? "").split("-").map(Number);
+  const [hours, minutes] = appointment.time.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes);
+}
+
+function formatAppointment(appointment: AppointmentRecord) {
+  const value = appointmentDate(appointment);
+  if (Number.isNaN(value.getTime()))
+    return `${appointment.appointment_date ?? "Data pendente"} · ${appointment.time}`;
+  return format(value, "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
+}

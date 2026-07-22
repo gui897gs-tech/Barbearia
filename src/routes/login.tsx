@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Lock } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { getRoleHome, getUserRole, useAuth } from "@/lib/auth";
-import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { getRoleHome, getUserRole, useAuth } from "@/features/auth/auth-context";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import kingsBarberLogo from "@/assets/kings-barber-logo.png";
+import { ThemeToggle } from "@/features/theme/theme-toggle";
 
 type Mode = "login" | "signup";
 
@@ -14,7 +15,10 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Entrar - King's Barber" },
-      { name: "description", content: "Acesse a suite premium de gestao de barbearia King's Barber." },
+      {
+        name: "description",
+        content: "Acesse a suite premium de gestao de barbearia King's Barber.",
+      },
     ],
   }),
   component: LoginPage,
@@ -48,7 +52,9 @@ function LoginPage() {
     setMessage("");
 
     if (!supabase) {
-      setError("Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env para ativar o login.");
+      setError(
+        "Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env para ativar o login.",
+      );
       return;
     }
 
@@ -69,7 +75,7 @@ function LoginPage() {
       }
 
       if (password !== confirmPassword) {
-        setError("As senhas nao conferem.");
+        setError("As senhas não conferem.");
         return;
       }
 
@@ -103,20 +109,14 @@ function LoginPage() {
       return;
     }
 
-    if (false) {
-      setMessage("Cadastro criado com segurança. Confira seu e-mail para confirmar a conta e depois entre com sua senha.");
-      setMode("login");
-      setMessage("Cadastro criado. Para entrar direto sem confirmar e-mail, desative a confirmacao de e-mail no Supabase Auth.");
-      setPassword("");
-      setConfirmPassword("");
-      return;
-    }
-
     if (mode === "signup") {
-      const { error: signInError } = await supabase.auth.signInWithPassword(credentials);
-
-      if (signInError) {
-        setError(getAuthMessage(signInError.message));
+      if (!data.session) {
+        setMessage(
+          "Cadastro criado com segurança. Confira seu e-mail para confirmar a conta e depois entre com sua senha.",
+        );
+        setMode("login");
+        setPassword("");
+        setConfirmPassword("");
         return;
       }
 
@@ -129,11 +129,17 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 luxury-bg">
+    <div className="relative grid min-h-screen lg:grid-cols-2 luxury-bg">
+      <div className="absolute right-5 top-5 z-20">
+        <ThemeToggle />
+      </div>
       <div className="relative hidden lg:flex flex-col justify-between p-12 border-r border-border overflow-hidden">
         <div
           className="absolute inset-0 opacity-30"
-          style={{ background: "radial-gradient(600px 400px at 30% 20%, rgba(212,166,58,0.25), transparent 60%)" }}
+          style={{
+            background:
+              "radial-gradient(600px 400px at 30% 20%, rgba(212,166,58,0.25), transparent 60%)",
+          }}
         />
         <div className="relative z-10 flex items-center gap-3">
           <img
@@ -151,7 +157,8 @@ function LoginPage() {
             A arte do <span className="text-gradient-gold">corte</span>, refinada em software.
           </h1>
           <p className="mt-6 text-muted-foreground">
-            Agende seu horario, acompanhe seus atendimentos e viva uma experiencia premium na King's Barber.
+            Agende seu horário, acompanhe seus atendimentos e viva uma experiência premium na King's
+            Barber.
           </p>
           <div className="mt-10 flex items-center gap-6 text-xs uppercase tracking-[0.2em] text-muted-foreground">
             <span>Desde 2026</span>
@@ -175,34 +182,44 @@ function LoginPage() {
           </div>
 
           <div className="text-[11px] uppercase tracking-[0.25em] text-gold">Acesso seguro</div>
-          <h2 className="font-display text-3xl md:text-4xl mt-2">{mode === "login" ? "Entre na sua barbearia" : "Crie sua conta"}</h2>
+          <h2 className="font-display text-3xl md:text-4xl mt-2">
+            {mode === "login" ? "Entre na sua barbearia" : "Crie sua conta"}
+          </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            {mode === "login" ? "Use seu e-mail e senha cadastrados." : "Cadastre seus dados para acessar com seguranca."}
+            {mode === "login"
+              ? "Use seu e-mail e senha cadastrados."
+              : "Cadastre seus dados para acessar com segurança."}
           </p>
 
           <div className="mt-6 grid grid-cols-2 rounded-xl border border-border bg-card/70 p-1">
             <button
               type="button"
+              disabled={!initialized}
               onClick={() => {
                 setMode("login");
                 setError("");
                 setMessage("");
               }}
               className={`rounded-lg px-4 py-2 text-sm transition ${
-                mode === "login" ? "gradient-gold text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                mode === "login"
+                  ? "gradient-gold text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Entrar
             </button>
             <button
               type="button"
+              disabled={!initialized}
               onClick={() => {
                 setMode("signup");
                 setError("");
                 setMessage("");
               }}
               className={`rounded-lg px-4 py-2 text-sm transition ${
-                mode === "signup" ? "gradient-gold text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                mode === "signup"
+                  ? "gradient-gold text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Criar conta
@@ -211,14 +228,17 @@ function LoginPage() {
 
           {!isSupabaseConfigured && (
             <div className="mt-6 rounded-xl border border-[color:var(--gold)]/40 bg-accent/40 p-3 text-xs text-muted-foreground">
-              Falta configurar o Supabase. Preencha o arquivo .env com a URL do projeto e a anon key.
+              Falta configurar o Supabase. Preencha o arquivo .env com a URL do projeto e a anon
+              key.
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             {mode === "signup" && (
               <div>
-                <label className="text-xs text-muted-foreground" htmlFor="fullName">Nome</label>
+                <label className="text-xs text-muted-foreground" htmlFor="fullName">
+                  Nome
+                </label>
                 <input
                   id="fullName"
                   type="text"
@@ -233,7 +253,9 @@ function LoginPage() {
 
             {mode === "signup" && (
               <div>
-                <label className="text-xs text-muted-foreground" htmlFor="phone">Telefone</label>
+                <label className="text-xs text-muted-foreground" htmlFor="phone">
+                  Telefone
+                </label>
                 <input
                   id="phone"
                   type="tel"
@@ -248,7 +270,9 @@ function LoginPage() {
             )}
 
             <div>
-              <label className="text-xs text-muted-foreground" htmlFor="email">E-mail</label>
+              <label className="text-xs text-muted-foreground" htmlFor="email">
+                E-mail
+              </label>
               <input
                 id="email"
                 type="email"
@@ -261,7 +285,9 @@ function LoginPage() {
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground" htmlFor="password">Senha</label>
+              <label className="text-xs text-muted-foreground" htmlFor="password">
+                Senha
+              </label>
               <input
                 id="password"
                 type="password"
@@ -273,13 +299,17 @@ function LoginPage() {
                 className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
               />
               {mode === "signup" && (
-                <div className="mt-1 text-[11px] text-muted-foreground">Use pelo menos 8 caracteres.</div>
+                <div className="mt-1 text-[11px] text-muted-foreground">
+                  Use pelo menos 8 caracteres.
+                </div>
               )}
             </div>
 
             {mode === "signup" && (
               <div>
-                <label className="text-xs text-muted-foreground" htmlFor="confirmPassword">Confirmar senha</label>
+                <label className="text-xs text-muted-foreground" htmlFor="confirmPassword">
+                  Confirmar senha
+                </label>
                 <input
                   id="confirmPassword"
                   type="password"
@@ -295,7 +325,8 @@ function LoginPage() {
 
             {mode === "signup" && (
               <div className="rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-3 text-xs text-muted-foreground">
-                O cadastro publico cria uma conta de cliente. Acessos de barbeiro e dono sao liberados pela administracao da barbearia.
+                O cadastro publico cria uma conta de cliente. Acessos de barbeiro e dono sao
+                liberados pela administracao da barbearia.
               </div>
             )}
 
@@ -307,16 +338,27 @@ function LoginPage() {
                   onChange={(event) => setAcceptedTerms(event.target.checked)}
                   className="mt-0.5 h-4 w-4 accent-[color:var(--gold)]"
                 />
-                <span>Confirmo que desejo criar minha conta na King's Barber e proteger meu acesso com esta senha.</span>
+                <span>
+                  Confirmo que desejo criar minha conta na King's Barber e proteger meu acesso com
+                  esta senha.
+                </span>
               </label>
             )}
 
-            {error && <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">{error}</div>}
-            {message && <div className="rounded-xl border border-[color:var(--gold)]/40 bg-accent/40 p-3 text-xs text-muted-foreground">{message}</div>}
+            {error && (
+              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+                {error}
+              </div>
+            )}
+            {message && (
+              <div className="rounded-xl border border-[color:var(--gold)]/40 bg-accent/40 p-3 text-xs text-muted-foreground">
+                {message}
+              </div>
+            )}
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !initialized}
               className="flex w-full items-center justify-center gap-2 rounded-xl gradient-gold px-5 py-3 text-sm font-semibold text-primary-foreground gold-glow disabled:cursor-not-allowed disabled:opacity-70"
             >
               <Lock className="h-4 w-4" />
@@ -326,6 +368,7 @@ function LoginPage() {
 
           <button
             type="button"
+            disabled={!initialized}
             onClick={() => {
               setMode((current) => (current === "login" ? "signup" : "login"));
               setError("");
@@ -333,7 +376,7 @@ function LoginPage() {
             }}
             className="mt-6 w-full text-center text-xs text-muted-foreground hover:text-gold transition"
           >
-            {mode === "login" ? "Ainda nao tem conta? Criar cadastro" : "Ja tenho conta. Entrar"}
+            {mode === "login" ? "Ainda não tem conta? Criar cadastro" : "Já tenho conta. Entrar"}
           </button>
         </div>
       </div>
@@ -349,7 +392,7 @@ function getAuthMessage(message: string) {
     normalized.includes("already been registered") ||
     normalized.includes("user already exists")
   ) {
-    return "Este e-mail ja esta cadastrado. Use Entrar ou recupere a senha.";
+    return "Este e-mail já está cadastrado. Use Entrar ou recupere a senha.";
   }
 
   if (normalized.includes("signups not allowed") || normalized.includes("signup is disabled")) {
@@ -361,7 +404,7 @@ function getAuthMessage(message: string) {
   }
 
   if (normalized.includes("invalid email") || normalized.includes("email address is invalid")) {
-    return "Este e-mail nao foi aceito pelo Supabase. Confira o endereco ou tente outro e-mail.";
+    return "Este e-mail não foi aceito pelo Supabase. Confira o endereço ou tente outro e-mail.";
   }
 
   if (normalized.includes("invalid login credentials")) {
@@ -369,14 +412,14 @@ function getAuthMessage(message: string) {
   }
 
   if (normalized.includes("password")) {
-    return "A senha nao atende aos requisitos de seguranca.";
+    return "A senha não atende aos requisitos de segurança.";
   }
 
   if (normalized.includes("email")) {
     return `O Supabase recusou este e-mail: ${message}`;
   }
 
-  return message || "Nao foi possivel concluir a operacao. Tente novamente.";
+  return message || "Não foi possível concluir a operação. Tente novamente.";
 }
 
 async function createClientAccount({
@@ -391,22 +434,19 @@ async function createClientAccount({
   password: string;
 }) {
   if (!supabase) {
-    return { data: null, error: new Error("Supabase nao configurado.") };
+    return { data: null, error: new Error("Supabase não configurado.") };
   }
 
-  const { data, error } = await supabase.functions.invoke("create-client", {
-    body: { fullName, phone, email, password },
+  return supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        phone,
+      },
+    },
   });
-
-  if (error) {
-    return { data: null, error };
-  }
-
-  if (data?.error) {
-    return { data: null, error: new Error(data.error) };
-  }
-
-  return { data, error: null };
 }
 
 function getSafeRedirect(redirect: string | undefined, role: "owner" | "barber" | "client") {

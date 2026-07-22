@@ -1,14 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
-import { AppShell, PageHeader } from "@/components/AppShell";
-import { fmtBRL } from "@/lib/sample-data";
-import { deleteService, listServices, saveService, ServiceRecord } from "@/lib/business-data";
+import { AppShell, PageHeader } from "@/components/layout/app-shell";
+import { formatCurrency } from "@/shared/utils/format";
+import {
+  deleteService,
+  listServices,
+  saveService,
+  ServiceRecord,
+} from "@/data/repositories/business-repository";
 import { Clock, Plus, Pencil, X } from "lucide-react";
+import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 
 type Service = ServiceRecord;
 
 export const Route = createFileRoute("/owner/services")({
-  head: () => ({ meta: [{ title: "Servicos - Maison Lame" }] }),
+  head: () => ({ meta: [{ title: "Servicos - King's Barber" }] }),
   component: ServicesPage,
 });
 
@@ -18,24 +24,41 @@ function ServicesPage() {
   const [addingService, setAddingService] = useState(false);
 
   useEffect(() => {
-    listServices().then(setServiceList);
+    void listServices().then(setServiceList).catch(notifyError);
   }, []);
 
   async function handleSave(updatedService: Service) {
-    const saved = await saveService(updatedService);
-    setServiceList(serviceList.map((service) => (service.id === saved.id ? saved : service)));
-    setEditingService(null);
+    try {
+      const saved = await saveService(updatedService);
+      setServiceList((items) =>
+        items.map((service) => (service.id === saved.id ? saved : service)),
+      );
+      setEditingService(null);
+      notifySuccess("Serviço atualizado.");
+    } catch (error) {
+      notifyError(error);
+    }
   }
 
   async function handleCreate(newService: Service) {
-    const saved = await saveService(newService);
-    setServiceList([...serviceList, saved]);
-    setAddingService(false);
+    try {
+      const saved = await saveService(newService);
+      setServiceList((items) => [...items, saved]);
+      setAddingService(false);
+      notifySuccess("Serviço adicionado.");
+    } catch (error) {
+      notifyError(error);
+    }
   }
 
   async function handleDelete(service: Service) {
-    await deleteService(service.id);
-    setServiceList(serviceList.filter((item) => item.id !== service.id));
+    try {
+      await deleteService(service.id);
+      setServiceList((items) => items.filter((item) => item.id !== service.id));
+      notifySuccess("Serviço excluído.");
+    } catch (error) {
+      notifyError(error);
+    }
   }
 
   return (
@@ -50,17 +73,22 @@ function ServicesPage() {
             onClick={() => setAddingService(true)}
             className="inline-flex items-center gap-2 rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground gold-glow"
           >
-            <Plus className="h-4 w-4" /> Adicionar servico
+            <Plus className="h-4 w-4" /> Adicionar serviço
           </button>
         }
       />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {serviceList.map((service) => (
-          <div key={service.id} className="glass-card rounded-2xl p-6 hover:gold-glow transition group">
+          <div
+            key={service.id}
+            className="glass-card rounded-2xl p-6 hover:gold-glow transition group"
+          >
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-gold">{service.category}</div>
+                <div className="text-[11px] uppercase tracking-[0.2em] text-gold">
+                  {service.category}
+                </div>
                 <div className="font-display text-xl mt-2">{service.name}</div>
               </div>
               <button
@@ -74,15 +102,18 @@ function ServicesPage() {
             </div>
             <div className="mt-6 flex items-end justify-between">
               <div>
-                <div className="text-3xl font-display text-gradient-gold">{fmtBRL(service.price)}</div>
+                <div className="text-3xl font-display text-gradient-gold">
+                  {formatCurrency(service.price)}
+                </div>
                 <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" /> {service.duration} min
                 </div>
               </div>
-              <button className="rounded-xl border border-[color:var(--gold)]/40 px-3 py-1.5 text-xs text-gold hover:bg-[color:var(--gold)]/10 transition">
-                Agendar
-              </button>
-              <button type="button" onClick={() => handleDelete(service)} className="ml-2 rounded-xl border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-destructive transition">
+              <button
+                type="button"
+                onClick={() => handleDelete(service)}
+                className="ml-2 rounded-xl border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-destructive transition"
+              >
                 Excluir
               </button>
             </div>
@@ -92,7 +123,7 @@ function ServicesPage() {
 
       {editingService && (
         <EditServiceDialog
-          title="Editar servico"
+          title="Editar serviço"
           service={editingService}
           onClose={() => setEditingService(null)}
           onSave={handleSave}
@@ -101,7 +132,7 @@ function ServicesPage() {
 
       {addingService && (
         <EditServiceDialog
-          title="Adicionar servico"
+          title="Adicionar serviço"
           service={{
             id: `s-${Date.now()}`,
             name: "",
@@ -147,7 +178,10 @@ function EditServiceDialog({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="text-[11px] uppercase tracking-[0.2em] text-gold">{title}</div>
@@ -165,7 +199,7 @@ function EditServiceDialog({
 
         <div className="mt-6 space-y-4">
           <label className="block">
-            <span className="text-xs text-muted-foreground">Nome do servico</span>
+            <span className="text-xs text-muted-foreground">Nome do serviço</span>
             <input
               required
               value={name}

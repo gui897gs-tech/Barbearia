@@ -1,42 +1,106 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Fragment, useEffect, useState } from "react";
-import { AppShell, PageHeader } from "@/components/AppShell";
-import { fmtBRL } from "@/lib/sample-data";
-import { EmployeeRecord, listAppointments, listEmployees, saveAppointment } from "@/lib/business-data";
 import {
-  Appointment,
-  AppointmentDialog,
-} from "@/components/AppointmentDialog";
-import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AppShell, PageHeader } from "@/components/layout/app-shell";
+import { Button } from "@/components/ui/button";
+import {
+  AppointmentRecord,
+  deleteAppointment,
+  listAppointments,
+  saveAppointment,
+} from "@/data/repositories/business-repository";
+import { AppointmentDialog } from "@/features/appointments/components/appointment-dialog";
+import { notifyError, notifySuccess } from "@/shared/notifications/toast";
+import { formatCurrency, formatDateKey, isCancelledStatus } from "@/shared/utils/format";
 
 export const Route = createFileRoute("/owner/appointments")({
-  head: () => ({ meta: [{ title: "Agendamentos - Maison Lame" }] }),
+  head: () => ({ meta: [{ title: "Agendamentos — King's Barber" }] }),
   component: AppointmentsPage,
 });
 
+const statusOptions = [
+  "Pendente",
+  "Confirmado",
+  "Em atendimento",
+  "Concluído",
+  "Não compareceu",
+  "Cancelado",
+];
+
 function AppointmentsPage() {
-  const hours = Array.from({ length: 10 }, (_, i) => `${9 + i}:00`);
-  const [appointmentList, setAppointmentList] = useState<Appointment[]>([]);
-  const [barbers, setBarbers] = useState<EmployeeRecord[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [addingAppointment, setAddingAppointment] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date(2026, 4, 21));
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const dateKey = formatDateKey(selectedDate);
 
   useEffect(() => {
-    listAppointments(selectedDate.toISOString().slice(0, 10)).then(setAppointmentList);
-  }, [selectedDate]);
+    setLoading(true);
+    void listAppointments(dateKey)
+      .then(setAppointments)
+      .catch(notifyError)
+      .finally(() => setLoading(false));
+  }, [dateKey]);
 
-  useEffect(() => {
-    listEmployees().then((items) => setBarbers(items.filter((barber) => barber.active !== false)));
-  }, []);
+  const filtered = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("pt-BR");
+    return appointments
+      .filter((appointment) =>
+        query
+          ? [appointment.client, appointment.service, appointment.barber].some((value) =>
+              value.toLocaleLowerCase("pt-BR").includes(query),
+            )
+          : true,
+      )
+      .sort((a, b) => a.time.localeCompare(b.time));
+  }, [appointments, search]);
 
-  async function handleCreate(appointment: Appointment) {
-    const saved = await saveAppointment({
-      ...appointment,
-      appointment_date: selectedDate.toISOString().slice(0, 10),
-    });
-    const nextAppointments = [...appointmentList, saved].sort((a, b) => a.time.localeCompare(b.time));
-    setAppointmentList(nextAppointments);
-    setAddingAppointment(false);
+  async function handleCreate(appointment: AppointmentRecord) {
+    try {
+      const saved = await saveAppointment({ ...appointment, appointment_date: dateKey });
+      setAppointments((items) => [...items, saved]);
+      setAddingAppointment(false);
+      notifySuccess("Agendamento criado.");
+    } catch (error) {
+      notifyError(error);
+    }
+  }
+
+  async function changeStatus(appointment: AppointmentRecord, status: string) {
+    setUpdatingId(appointment.id);
+    try {
+      const saved = await saveAppointment({ ...appointment, status });
+      setAppointments((items) => items.map((item) => (item.id === appointment.id ? saved : item)));
+      notifySuccess("Status atualizado.");
+    } catch (error) {
+      notifyError(error);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function remove(appointment: AppointmentRecord) {
+    if (!window.confirm(`Excluir o agendamento de ${appointment.client}?`)) return;
+    setUpdatingId(appointment.id);
+    try {
+      await deleteAppointment(appointment.id);
+      setAppointments((items) => items.filter((item) => item.id !== appointment.id));
+      notifySuccess("Agendamento excluído.");
+    } catch (error) {
+      notifyError(error);
+    } finally {
+      setUpdatingId(null);
+    }
   }
 
   function changeDay(offset: number) {
@@ -47,104 +111,133 @@ function AppointmentsPage() {
     });
   }
 
-  const selectedDateLabel = selectedDate.toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-
   return (
     <AppShell role="owner">
       <PageHeader
-        eyebrow="Agenda"
+        eyebrow="Controle de agenda"
         title="Agendamentos"
-        subtitle="Uma coreografia de cadeiras, maos e horarios."
+        subtitle="Todos os horários do dia, incluindo encaixes de meia hora."
         action={
-          <button
-            type="button"
-            onClick={() => setAddingAppointment(true)}
-            className="inline-flex items-center gap-2 rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground gold-glow"
-          >
+          <Button onClick={() => setAddingAppointment(true)}>
             <Plus className="h-4 w-4" /> Novo agendamento
-          </button>
+          </Button>
         }
       />
 
-      <div className="glass-card rounded-2xl p-4 md:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
+      <section className="glass-card rounded-2xl p-4 sm:p-6">
+        <div className="mb-6 flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center justify-between gap-2 sm:justify-start">
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Dia anterior"
               onClick={() => changeDay(-1)}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-border hover:border-[color:var(--gold)]/50 hover:text-gold transition"
             >
               <ChevronLeft className="h-4 w-4" />
-            </button>
-            <div className="font-display text-lg px-3 capitalize">{selectedDateLabel}</div>
-            <button
-              type="button"
+            </Button>
+            <label className="relative">
+              <span className="sr-only">Data da agenda</span>
+              <input
+                type="date"
+                value={dateKey}
+                onChange={(event) => setSelectedDate(new Date(`${event.target.value}T12:00:00`))}
+                className="profile-input min-w-44 text-center font-display"
+              />
+            </label>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Próximo dia"
               onClick={() => changeDay(1)}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-border hover:border-[color:var(--gold)]/50 hover:text-gold transition"
             >
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input placeholder="Buscar cliente" className="rounded-xl bg-card border border-border pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-[color:var(--gold)]" />
+          <div className="relative w-full lg:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Cliente, serviço ou barbeiro"
+              className="profile-input pl-9"
+            />
           </div>
         </div>
 
-        <div className="overflow-x-auto scrollbar-none">
-          <div className="min-w-[760px] grid" style={{ gridTemplateColumns: `80px repeat(${Math.max(barbers.length, 1)}, minmax(160px,1fr))` }}>
-            <div />
-            {barbers.length === 0 && (
-              <div className="px-3 pb-4 border-b border-border text-sm text-muted-foreground">
-                Nenhum barbeiro cadastrado
-              </div>
-            )}
-            {barbers.map((barber) => (
-              <div key={barber.id} className="px-3 pb-4 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <img src={barber.image} alt={barber.name} className="h-8 w-8 rounded-full object-cover ring-1 ring-[color:var(--gold)]/40" />
-                  <div>
-                    <div className="text-sm font-medium">{barber.name.split(" ")[0]}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{barber.title}</div>
-                  </div>
+        {loading ? (
+          <div className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin text-gold" /> Carregando agenda
+          </div>
+        ) : filtered.length ? (
+          <div className="space-y-3">
+            {filtered.map((appointment) => (
+              <article
+                key={appointment.id}
+                className="grid gap-4 rounded-xl border border-border bg-background/35 p-4 transition hover:border-gold/35 md:grid-cols-[5rem_1fr_auto] md:items-center"
+              >
+                <div>
+                  <p className="font-display text-2xl text-gold">{appointment.time}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    {appointment.duration_minutes ?? 30} min
+                  </p>
                 </div>
-              </div>
-            ))}
-
-            {hours.map((hour) => (
-              <Fragment key={hour}>
-                <div className="text-xs text-muted-foreground pr-3 py-6 border-b border-border/40 text-right">{hour}</div>
-                {barbers.map((barber) => {
-                  const appointment = appointmentList.find((item) => item.time === hour && item.barber === barber.name);
-                  return (
-                    <div key={`${hour}-${barber.id}`} className="border-b border-l border-border/40 p-1.5 min-h-[72px]">
-                      {appointment && (
-                        <div className="rounded-xl bg-gradient-to-br from-[color:var(--gold)]/15 to-transparent border border-[color:var(--gold)]/30 p-2.5 h-full hover:gold-glow transition cursor-pointer">
-                          <div className="text-xs text-gold">{appointment.service}</div>
-                          <div className="text-sm font-medium truncate mt-0.5">{appointment.client}</div>
-                          <div className="text-[10px] text-muted-foreground mt-1">{fmtBRL(appointment.price)}</div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </Fragment>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="font-display text-lg">{appointment.client}</h2>
+                    {isCancelledStatus(appointment.status) ? (
+                      <span className="rounded-full border border-destructive/30 px-2 py-0.5 text-[9px] uppercase text-destructive">
+                        Cancelado
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {appointment.service} · {appointment.barber}
+                  </p>
+                  {appointment.notes ? (
+                    <p className="mt-2 text-xs text-muted-foreground">{appointment.notes}</p>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                  <span className="mr-2 font-display text-lg">
+                    {formatCurrency(appointment.price)}
+                  </span>
+                  <select
+                    aria-label={`Status de ${appointment.client}`}
+                    value={appointment.status}
+                    disabled={updatingId === appointment.id}
+                    onChange={(event) => void changeStatus(appointment, event.target.value)}
+                    className="rounded-lg border border-border bg-card px-3 py-2 text-xs"
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
+                  </select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Excluir agendamento de ${appointment.client}`}
+                    disabled={updatingId === appointment.id}
+                    onClick={() => void remove(appointment)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </article>
             ))}
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            <CalendarDays className="h-6 w-6 text-gold" />
+            {search
+              ? "Nenhum agendamento corresponde à busca."
+              : "Nenhum horário reservado nesta data."}
+          </div>
+        )}
+      </section>
 
-      {addingAppointment && (
-        <AppointmentDialog
-          onClose={() => setAddingAppointment(false)}
-          onSave={handleCreate}
-        />
-      )}
+      {addingAppointment ? (
+        <AppointmentDialog onClose={() => setAddingAppointment(false)} onSave={handleCreate} />
+      ) : null}
     </AppShell>
   );
 }

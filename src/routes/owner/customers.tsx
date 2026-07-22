@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { AppShell, PageHeader } from "@/components/AppShell";
+import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import {
   Crown,
   Edit3,
@@ -11,7 +11,6 @@ import {
   MoreHorizontal,
   Plus,
   Search,
-  SlidersHorizontal,
   Sparkles,
   Star,
   Trash2,
@@ -19,10 +18,10 @@ import {
   Users,
   Wallet,
   X,
-  CalendarPlus,
   Phone,
   Mail,
   MapPin,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Customer,
@@ -34,14 +33,15 @@ import {
   listCustomers,
   updateCustomer,
   CustomerHistory,
-} from "@/lib/customers";
+} from "@/data/repositories/customer-repository";
+import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 
 const pageSize = 6;
 type FilterKey = "all" | "vip" | "birthday" | "30" | "60" | "90" | "top" | "new";
 type SortKey = "name" | "total_spent" | "last_visit" | "visits";
 
 export const Route = createFileRoute("/owner/customers")({
-  head: () => ({ meta: [{ title: "Clientes - Maison Lame" }] }),
+  head: () => ({ meta: [{ title: "Clientes - King's Barber" }] }),
   component: CustomersPage,
 });
 
@@ -63,12 +63,20 @@ function CustomersPage() {
 
     async function load() {
       setLoading(true);
-      const [customerRows, historyRows] = await Promise.all([listCustomers(), listCustomerHistory()]);
-      if (!active) return;
-      setCustomers(customerRows);
-      setHistory(historyRows);
-      setSelectedCustomer(customerRows[0] || null);
-      setLoading(false);
+      try {
+        const [customerRows, historyRows] = await Promise.all([
+          listCustomers(),
+          listCustomerHistory(),
+        ]);
+        if (!active) return;
+        setCustomers(customerRows);
+        setHistory(historyRows);
+        setSelectedCustomer(customerRows[0] || null);
+      } catch (error) {
+        if (active) notifyError(error);
+      } finally {
+        if (active) setLoading(false);
+      }
     }
 
     load();
@@ -79,16 +87,26 @@ function CustomersPage() {
 
   const filteredCustomers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const now = new Date("2026-05-21T12:00:00");
+    const now = new Date();
 
     return customers
       .filter((customer) => {
         const lastVisitDays = customer.last_visit
           ? Math.floor((now.getTime() - new Date(customer.last_visit).getTime()) / 86400000)
           : 999;
-        const birthdayMonth = customer.birth_date ? new Date(customer.birth_date).getMonth() === 4 : false;
-        const createdThisMonth = new Date(customer.created_at).getMonth() === 4;
-        const queryMatch = [customer.name, customer.whatsapp, customer.email, customer.favorite_barber]
+        const birthdayMonth = customer.birth_date
+          ? new Date(customer.birth_date).getMonth() === now.getMonth()
+          : false;
+        const createdDate = new Date(customer.created_at);
+        const createdThisMonth =
+          createdDate.getMonth() === now.getMonth() &&
+          createdDate.getFullYear() === now.getFullYear();
+        const queryMatch = [
+          customer.name,
+          customer.whatsapp,
+          customer.email,
+          customer.favorite_barber,
+        ]
           .filter(Boolean)
           .join(" ")
           .toLowerCase()
@@ -106,7 +124,8 @@ function CustomersPage() {
       })
       .sort((a, b) => {
         if (sort === "name") return a.name.localeCompare(b.name);
-        if (sort === "last_visit") return String(b.last_visit || "").localeCompare(String(a.last_visit || ""));
+        if (sort === "last_visit")
+          return String(b.last_visit || "").localeCompare(String(a.last_visit || ""));
         if (sort === "visits") return b.visits - a.visits;
         return b.total_spent - a.total_spent;
       });
@@ -119,28 +138,46 @@ function CustomersPage() {
 
   async function handleCreate(input: CustomerInput) {
     setSaving(true);
-    const created = await createCustomer(input);
-    setCustomers((items) => [created, ...items]);
-    setSelectedCustomer(created);
-    setCreatingCustomer(false);
-    setSaving(false);
+    try {
+      const created = await createCustomer(input);
+      setCustomers((items) => [created, ...items]);
+      setSelectedCustomer(created);
+      setCreatingCustomer(false);
+      notifySuccess("Cliente criado.");
+    } catch (error) {
+      notifyError(error);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleUpdate(customer: Customer) {
     setSaving(true);
-    const updated = await updateCustomer(customer);
-    setCustomers((items) => items.map((item) => (item.id === updated.id ? updated : item)));
-    setSelectedCustomer(updated);
-    setEditingCustomer(null);
-    setSaving(false);
+    try {
+      const updated = await updateCustomer(customer);
+      setCustomers((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+      setSelectedCustomer(updated);
+      setEditingCustomer(null);
+      notifySuccess("Cliente atualizado.");
+    } catch (error) {
+      notifyError(error);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(customer: Customer) {
     setSaving(true);
-    await deleteCustomer(customer.id);
-    setCustomers((items) => items.filter((item) => item.id !== customer.id));
-    setSelectedCustomer(null);
-    setSaving(false);
+    try {
+      await deleteCustomer(customer.id);
+      setCustomers((items) => items.filter((item) => item.id !== customer.id));
+      setSelectedCustomer(null);
+      notifySuccess("Cliente excluído.");
+    } catch (error) {
+      notifyError(error);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -161,12 +198,48 @@ function CustomersPage() {
       />
 
       <section className="grid grid-cols-2 xl:grid-cols-6 gap-4">
-        <CustomerMetricCard title="Total de clientes" value={String(metrics.total)} delta="+12%" desc="vs mes anterior" icon={Users} />
-        <CustomerMetricCard title="Novos no mes" value={String(metrics.newThisMonth)} delta="+19%" desc="cadastros recentes" icon={UserRound} />
-        <CustomerMetricCard title="Recorrentes" value={String(metrics.recurring)} delta={`${metrics.recurringPercent}%`} desc="do total" icon={Sparkles} />
-        <CustomerMetricCard title="Ticket medio" value={fmtCurrency(metrics.averageTicket)} delta="+8%" desc="por visita" icon={Wallet} />
-        <CustomerMetricCard title="Clientes VIP" value={String(metrics.vip)} delta={`${metrics.vipPercent}%`} desc="do total" icon={Crown} />
-        <CustomerMetricCard title="Inativos" value={String(metrics.inactive)} delta="-4%" desc="sem retorno" icon={History} />
+        <CustomerMetricCard
+          title="Total de clientes"
+          value={String(metrics.total)}
+          delta="+12%"
+          desc="vs. mês anterior"
+          icon={Users}
+        />
+        <CustomerMetricCard
+          title="Novos no mês"
+          value={String(metrics.newThisMonth)}
+          delta="+19%"
+          desc="cadastros recentes"
+          icon={UserRound}
+        />
+        <CustomerMetricCard
+          title="Recorrentes"
+          value={String(metrics.recurring)}
+          delta={`${metrics.recurringPercent}%`}
+          desc="do total"
+          icon={Sparkles}
+        />
+        <CustomerMetricCard
+          title="Ticket medio"
+          value={fmtCurrency(metrics.averageTicket)}
+          delta="+8%"
+          desc="por visita"
+          icon={Wallet}
+        />
+        <CustomerMetricCard
+          title="Clientes VIP"
+          value={String(metrics.vip)}
+          delta={`${metrics.vipPercent}%`}
+          desc="do total"
+          icon={Crown}
+        />
+        <CustomerMetricCard
+          title="Inativos"
+          value={String(metrics.inactive)}
+          delta="-4%"
+          desc="sem retorno"
+          icon={History}
+        />
       </section>
 
       <section className="mt-6 glass-card rounded-2xl p-4">
@@ -191,13 +264,10 @@ function CustomersPage() {
               className="rounded-xl border border-border bg-background/70 px-3 py-2.5 text-xs text-muted-foreground outline-none focus:border-[color:var(--gold)]"
             >
               <option value="total_spent">Maior gasto</option>
-              <option value="last_visit">Ultima visita</option>
+              <option value="last_visit">Última visita</option>
               <option value="visits">Mais visitas</option>
               <option value="name">Nome</option>
             </select>
-            <button className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3 py-2.5 text-xs text-muted-foreground hover:border-[color:var(--gold)]/60 hover:text-foreground transition">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-gold" /> Filtros
-            </button>
           </div>
         </div>
 
@@ -234,20 +304,26 @@ function CustomersPage() {
           />
           <div className="flex flex-col gap-3 border-t border-border px-4 py-4 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
             <div>
-              Mostrando {pagedCustomers.length ? (page - 1) * pageSize + 1 : 0} a {Math.min(page * pageSize, filteredCustomers.length)} de {filteredCustomers.length} clientes
+              Mostrando {pagedCustomers.length ? (page - 1) * pageSize + 1 : 0} a{" "}
+              {Math.min(page * pageSize, filteredCustomers.length)} de {filteredCustomers.length}{" "}
+              clientes
             </div>
             <div className="flex items-center gap-2">
-              {Array.from({ length: Math.min(pageCount, 5) }, (_, index) => index + 1).map((item) => (
-                <button
-                  key={item}
-                  onClick={() => setPage(item)}
-                  className={`grid h-8 w-8 place-items-center rounded-lg border ${
-                    page === item ? "border-[color:var(--gold)] text-gold" : "border-border hover:text-foreground"
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
+              {Array.from({ length: Math.min(pageCount, 5) }, (_, index) => index + 1).map(
+                (item) => (
+                  <button
+                    key={item}
+                    onClick={() => setPage(item)}
+                    className={`grid h-8 w-8 place-items-center rounded-lg border ${
+                      page === item
+                        ? "border-[color:var(--gold)] text-gold"
+                        : "border-border hover:text-foreground"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
             </div>
           </div>
         </div>
@@ -296,7 +372,19 @@ const quickFilters: Array<{ key: FilterKey; label: string }> = [
   { key: "new", label: "Clientes novos" },
 ];
 
-function CustomerMetricCard({ title, value, delta, desc, icon: Icon }: { title: string; value: string; delta: string; desc: string; icon: any }) {
+function CustomerMetricCard({
+  title,
+  value,
+  delta,
+  desc,
+  icon: Icon,
+}: {
+  title: string;
+  value: string;
+  delta: string;
+  desc: string;
+  icon: LucideIcon;
+}) {
   return (
     <div className="glass-card rounded-2xl p-5 transition hover:-translate-y-0.5 hover:gold-glow">
       <div className="flex items-start justify-between gap-3">
@@ -349,7 +437,9 @@ function CustomersTable({
             <Users className="h-5 w-5" />
           </div>
           <div className="mt-4 font-display text-xl">Nenhum cliente encontrado</div>
-          <p className="mt-2 text-sm text-muted-foreground">Ajuste a busca ou cadastre um novo cliente.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ajuste a busca ou cadastre um novo cliente.
+          </p>
         </div>
       </div>
     );
@@ -363,7 +453,7 @@ function CustomersTable({
             <th className="px-4 py-4">Cliente</th>
             <th className="px-4 py-4">WhatsApp</th>
             <th className="px-4 py-4">Barbeiro favorito</th>
-            <th className="px-4 py-4">Ultima visita</th>
+            <th className="px-4 py-4">Última visita</th>
             <th className="px-4 py-4">Proximo agendamento</th>
             <th className="px-4 py-4">Total gasto</th>
             <th className="px-4 py-4">Frequencia</th>
@@ -378,14 +468,24 @@ function CustomersTable({
               className={`border-b border-border/40 transition hover:bg-accent/30 ${selectedId === customer.id ? "bg-[color:var(--gold)]/10" : ""}`}
             >
               <td className="px-4 py-4">
-                <button type="button" onClick={() => onSelect(customer)} className="flex items-center gap-3 text-left">
+                <button
+                  type="button"
+                  onClick={() => onSelect(customer)}
+                  className="flex items-center gap-3 text-left"
+                >
                   <Avatar customer={customer} />
                   <div>
                     <div className="flex items-center gap-2 font-medium">
                       {customer.name}
-                      {customer.status === "vip" && <span className="rounded-full border border-[color:var(--gold)]/40 px-2 py-0.5 text-[10px] text-gold">VIP</span>}
+                      {customer.status === "vip" && (
+                        <span className="rounded-full border border-[color:var(--gold)]/40 px-2 py-0.5 text-[10px] text-gold">
+                          VIP
+                        </span>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground">{customer.city || "Sem cidade"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {customer.city || "Sem cidade"}
+                    </div>
                   </div>
                 </button>
               </td>
@@ -395,14 +495,23 @@ function CustomersTable({
               <td className="px-4 py-4">{formatDateTime(customer.next_appointment)}</td>
               <td className="px-4 py-4 text-gold">{fmtCurrency(customer.total_spent)}</td>
               <td className="px-4 py-4">{customer.frequency_days} dias</td>
-              <td className="px-4 py-4"><StatusBadge status={customer.status} /></td>
+              <td className="px-4 py-4">
+                <StatusBadge status={customer.status} />
+              </td>
               <td className="px-4 py-4">
                 <div className="flex justify-end gap-2">
-                  <IconButton title="Visualizar perfil" onClick={() => onSelect(customer)} icon={MoreHorizontal} />
+                  <IconButton
+                    title="Visualizar perfil"
+                    onClick={() => onSelect(customer)}
+                    icon={MoreHorizontal}
+                  />
                   <IconButton title="Editar" onClick={() => onEdit(customer)} icon={Edit3} />
-                  <IconButton title="Enviar WhatsApp" onClick={() => openWhatsapp(customer)} icon={MessageCircle} />
-                  <IconButton title="Historico" onClick={() => onSelect(customer)} icon={History} />
-                  <IconButton title="Agendar horario" onClick={() => onSelect(customer)} icon={CalendarPlus} />
+                  <IconButton
+                    title="Enviar WhatsApp"
+                    onClick={() => openWhatsapp(customer)}
+                    icon={MessageCircle}
+                  />
+                  <IconButton title="Histórico" onClick={() => onSelect(customer)} icon={History} />
                   <IconButton title="Excluir" onClick={() => onDelete(customer)} icon={Trash2} />
                 </div>
               </td>
@@ -438,7 +547,9 @@ function CustomerDrawer({
       <aside className="hidden 2xl:grid glass-card rounded-2xl min-h-[520px] place-items-center p-6 text-center">
         <div>
           <UserRound className="mx-auto h-8 w-8 text-gold" />
-          <p className="mt-3 text-sm text-muted-foreground">Selecione um cliente para abrir o perfil lateral.</p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Selecione um cliente para abrir o perfil lateral.
+          </p>
         </div>
       </aside>
     );
@@ -457,13 +568,20 @@ function CustomerDrawer({
             <div className="mt-1 text-xs text-gold">{customer.loyalty_points} pontos</div>
           </div>
         </div>
-        <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground">
+        <button
+          onClick={onClose}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground"
+        >
           <X className="h-4 w-4" />
         </button>
       </div>
 
       <div className="mt-5 grid grid-cols-4 gap-2">
-        <DrawerAction label="WhatsApp" icon={MessageCircle} onClick={() => openWhatsapp(customer)} />
+        <DrawerAction
+          label="WhatsApp"
+          icon={MessageCircle}
+          onClick={() => openWhatsapp(customer)}
+        />
         <DrawerAction label="Ligar" icon={Phone} />
         <DrawerAction label="Editar" icon={Edit3} onClick={() => onEdit(customer)} />
         <DrawerAction label="Mais" icon={MoreHorizontal} />
@@ -472,7 +590,10 @@ function CustomerDrawer({
       <DrawerBlock title="Dados">
         <InfoRow icon={Phone} value={customer.whatsapp} />
         <InfoRow icon={Mail} value={customer.email || "-"} />
-        <InfoRow icon={Gift} value={customer.birth_date ? `${formatDate(customer.birth_date)}` : "-"} />
+        <InfoRow
+          icon={Gift}
+          value={customer.birth_date ? `${formatDate(customer.birth_date)}` : "-"}
+        />
         <InfoRow icon={MapPin} value={customer.city || "-"} />
         <InfoRow icon={Star} value={customer.instagram || "-"} />
       </DrawerBlock>
@@ -483,12 +604,12 @@ function CustomerDrawer({
           <MiniMetric label="Ticket medio" value={fmtCurrency(customer.average_ticket)} />
           <MiniMetric label="Visitas" value={String(customer.visits)} />
           <MiniMetric label="Frequencia" value={`${customer.frequency_days} dias`} />
-          <MiniMetric label="Ultima visita" value={formatDate(customer.last_visit)} />
+          <MiniMetric label="Última visita" value={formatDate(customer.last_visit)} />
           <MiniMetric label="Proximo" value={formatDateTime(customer.next_appointment)} />
         </div>
       </DrawerBlock>
 
-      <DrawerBlock title="Historico">
+      <DrawerBlock title="Histórico">
         <div className="space-y-3">
           {history.slice(0, 5).map((item) => (
             <div key={item.id} className="rounded-xl border border-border bg-background/40 p-3">
@@ -496,16 +617,25 @@ function CustomerDrawer({
                 <div className="text-sm font-medium">{item.service}</div>
                 <div className="text-sm text-gold">{fmtCurrency(item.paid)}</div>
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">{formatDate(item.visited_at)} com {item.barber}</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {formatDate(item.visited_at)} com {item.barber}
+              </div>
             </div>
           ))}
         </div>
       </DrawerBlock>
 
       <DrawerBlock title="Preferencias">
-        <p className="text-sm text-muted-foreground">Barbeiro favorito: <span className="text-foreground">{customer.favorite_barber || "-"}</span></p>
-        <p className="mt-2 text-sm text-muted-foreground">Corte favorito: <span className="text-foreground">{customer.favorite_cut || "-"}</span></p>
-        <p className="mt-3 rounded-xl border border-[color:var(--gold)]/20 bg-[color:var(--gold)]/5 p-3 text-sm text-muted-foreground">{customer.barber_notes || "Sem observacoes do barbeiro."}</p>
+        <p className="text-sm text-muted-foreground">
+          Barbeiro favorito:{" "}
+          <span className="text-foreground">{customer.favorite_barber || "-"}</span>
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Corte favorito: <span className="text-foreground">{customer.favorite_cut || "-"}</span>
+        </p>
+        <p className="mt-3 rounded-xl border border-[color:var(--gold)]/20 bg-[color:var(--gold)]/5 p-3 text-sm text-muted-foreground">
+          {customer.barber_notes || "Sem observacoes do barbeiro."}
+        </p>
       </DrawerBlock>
 
       <DrawerBlock title="Fidelidade">
@@ -514,7 +644,10 @@ function CustomerDrawer({
           <span className="text-gold">{Math.min(customer.visits, 8)} / 8</span>
         </div>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-accent">
-          <div className="h-full rounded-full gradient-gold" style={{ width: `${Math.min(100, (customer.visits / 8) * 100)}%` }} />
+          <div
+            className="h-full rounded-full gradient-gold"
+            style={{ width: `${Math.min(100, (customer.visits / 8) * 100)}%` }}
+          />
         </div>
       </DrawerBlock>
 
@@ -594,46 +727,138 @@ function CustomerFormDialog({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4">
-      <form onSubmit={submit} className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-2xl scrollbar-none">
+      <form
+        onSubmit={submit}
+        className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-2xl scrollbar-none"
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="text-[11px] uppercase tracking-[0.2em] text-gold">{title}</div>
             <h2 className="font-display mt-1 text-2xl">Cadastro premium</h2>
           </div>
-          <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <TextField label="Nome" value={form.name} onChange={(value) => patch("name", value)} required />
-          <TextField label="WhatsApp" value={form.whatsapp} onChange={(value) => patch("whatsapp", value)} required />
-          <TextField label="E-mail" value={form.email || ""} onChange={(value) => patch("email", value)} />
-          <TextField label="Instagram" value={form.instagram || ""} onChange={(value) => patch("instagram", value)} />
-          <TextField label="Nascimento" type="date" value={form.birth_date || ""} onChange={(value) => patch("birth_date", value)} />
-          <TextField label="Cidade" value={form.city || ""} onChange={(value) => patch("city", value)} />
-          <TextField label="Foto/avatar URL" value={form.avatar_url || ""} onChange={(value) => patch("avatar_url", value)} />
-          <TextField label="Barbeiro favorito" value={form.favorite_barber || ""} onChange={(value) => patch("favorite_barber", value)} />
-          <TextField label="Corte favorito" value={form.favorite_cut || ""} onChange={(value) => patch("favorite_cut", value)} />
-          <TextField label="Ultima visita" type="date" value={form.last_visit || ""} onChange={(value) => patch("last_visit", value)} />
-          <TextField label="Proximo agendamento" type="datetime-local" value={toDatetimeLocal(form.next_appointment)} onChange={(value) => patch("next_appointment", value)} />
-          <SelectField label="Status" value={form.status} onChange={(value) => patch("status", value as CustomerStatus)} />
-          <NumberField label="Total gasto" value={form.total_spent} onChange={(value) => patch("total_spent", value)} />
-          <NumberField label="Ticket medio" value={form.average_ticket} onChange={(value) => patch("average_ticket", value)} />
-          <NumberField label="Visitas" value={form.visits} onChange={(value) => patch("visits", value)} />
-          <NumberField label="Pontos" value={form.loyalty_points} onChange={(value) => patch("loyalty_points", value)} />
+          <TextField
+            label="Nome"
+            value={form.name}
+            onChange={(value) => patch("name", value)}
+            required
+          />
+          <TextField
+            label="WhatsApp"
+            value={form.whatsapp}
+            onChange={(value) => patch("whatsapp", value)}
+            required
+          />
+          <TextField
+            label="E-mail"
+            value={form.email || ""}
+            onChange={(value) => patch("email", value)}
+          />
+          <TextField
+            label="Instagram"
+            value={form.instagram || ""}
+            onChange={(value) => patch("instagram", value)}
+          />
+          <TextField
+            label="Nascimento"
+            type="date"
+            value={form.birth_date || ""}
+            onChange={(value) => patch("birth_date", value)}
+          />
+          <TextField
+            label="Cidade"
+            value={form.city || ""}
+            onChange={(value) => patch("city", value)}
+          />
+          <TextField
+            label="Foto/avatar URL"
+            value={form.avatar_url || ""}
+            onChange={(value) => patch("avatar_url", value)}
+          />
+          <TextField
+            label="Barbeiro favorito"
+            value={form.favorite_barber || ""}
+            onChange={(value) => patch("favorite_barber", value)}
+          />
+          <TextField
+            label="Corte favorito"
+            value={form.favorite_cut || ""}
+            onChange={(value) => patch("favorite_cut", value)}
+          />
+          <TextField
+            label="Última visita"
+            type="date"
+            value={form.last_visit || ""}
+            onChange={(value) => patch("last_visit", value)}
+          />
+          <TextField
+            label="Proximo agendamento"
+            type="datetime-local"
+            value={toDatetimeLocal(form.next_appointment)}
+            onChange={(value) => patch("next_appointment", value)}
+          />
+          <SelectField
+            label="Status"
+            value={form.status}
+            onChange={(value) => patch("status", value as CustomerStatus)}
+          />
+          <NumberField
+            label="Total gasto"
+            value={form.total_spent}
+            onChange={(value) => patch("total_spent", value)}
+          />
+          <NumberField
+            label="Ticket medio"
+            value={form.average_ticket}
+            onChange={(value) => patch("average_ticket", value)}
+          />
+          <NumberField
+            label="Visitas"
+            value={form.visits}
+            onChange={(value) => patch("visits", value)}
+          />
+          <NumberField
+            label="Pontos"
+            value={form.loyalty_points}
+            onChange={(value) => patch("loyalty_points", value)}
+          />
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <TextArea label="Observacoes do barbeiro" value={form.barber_notes || ""} onChange={(value) => patch("barber_notes", value)} />
-          <TextArea label="Observacoes internas" value={form.internal_notes || ""} onChange={(value) => patch("internal_notes", value)} />
+          <TextArea
+            label="Observacoes do barbeiro"
+            value={form.barber_notes || ""}
+            onChange={(value) => patch("barber_notes", value)}
+          />
+          <TextArea
+            label="Observacoes internas"
+            value={form.internal_notes || ""}
+            onChange={(value) => patch("internal_notes", value)}
+          />
         </div>
 
         <div className="mt-6 flex gap-3">
-          <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
             Cancelar
           </button>
-          <button type="submit" disabled={saving} className="flex-1 rounded-xl gradient-gold px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-70">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 rounded-xl gradient-gold px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-70"
+          >
             {saving ? "Salvando..." : "Salvar"}
           </button>
         </div>
@@ -644,21 +869,55 @@ function CustomerFormDialog({
 
 function RetentionPanels({ customers }: { customers: Customer[] }) {
   const missing = customers.filter((customer) => daysSince(customer.last_visit) >= 30);
-  const birthdays = customers.filter((customer) => customer.birth_date && new Date(customer.birth_date).getMonth() === 4);
+  const birthdays = customers.filter(
+    (customer) =>
+      customer.birth_date &&
+      new Date(`${customer.birth_date}T12:00:00`).getMonth() === new Date().getMonth(),
+  );
   const top = [...customers].sort((a, b) => b.total_spent - a.total_spent).slice(0, 3);
   const vip = customers.filter((customer) => customer.status === "vip").slice(0, 4);
 
   return (
     <section className="mt-6 grid gap-4 xl:grid-cols-4">
-      <RetentionCard title="Clientes sumidos" subtitle="Sem voltar ha 30 dias" count={`${missing.length} clientes`} customers={missing} action="Enviar WhatsApp" />
-      <RetentionCard title="Aniversariantes" subtitle="Clientes do mes" count={`${birthdays.length} clientes`} customers={birthdays} action="Enviar parabens" />
+      <RetentionCard
+        title="Clientes sumidos"
+        subtitle="Sem voltar ha 30 dias"
+        count={`${missing.length} clientes`}
+        customers={missing}
+        action="Contatar primeiro cliente"
+      />
+      <RetentionCard
+        title="Aniversariantes"
+        subtitle="Clientes do mês"
+        count={`${birthdays.length} clientes`}
+        customers={birthdays}
+        action="Contatar primeiro cliente"
+      />
       <RankingCard title="Top clientes" customers={top} />
-      <RetentionCard title="Clientes VIP" subtitle="Melhores clientes da casa" count={`${vip.length} VIPs`} customers={vip} action="Ver todos" />
+      <RetentionCard
+        title="Clientes VIP"
+        subtitle="Melhores clientes da casa"
+        count={`${vip.length} VIPs`}
+        customers={vip}
+        action="Contatar primeiro cliente"
+      />
     </section>
   );
 }
 
-function RetentionCard({ title, subtitle, count, customers, action }: { title: string; subtitle: string; count: string; customers: Customer[]; action: string }) {
+function RetentionCard({
+  title,
+  subtitle,
+  count,
+  customers,
+  action,
+}: {
+  title: string;
+  subtitle: string;
+  count: string;
+  customers: Customer[];
+  action: string;
+}) {
   return (
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center justify-between gap-3">
@@ -667,10 +926,26 @@ function RetentionCard({ title, subtitle, count, customers, action }: { title: s
       </div>
       <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>
       <div className="mt-5 flex -space-x-2">
-        {customers.slice(0, 5).map((customer) => <Avatar key={customer.id} customer={customer} />)}
-        {customers.length > 5 && <div className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-xs text-muted-foreground">+{customers.length - 5}</div>}
+        {customers.slice(0, 5).map((customer) => (
+          <Avatar key={customer.id} customer={customer} />
+        ))}
+        {customers.length > 5 && (
+          <div className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card text-xs text-muted-foreground">
+            +{customers.length - 5}
+          </div>
+        )}
       </div>
-      <button className="mt-5 w-full rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground">{action}</button>
+      <button
+        type="button"
+        disabled={!customers.length}
+        onClick={() => {
+          const customer = customers[0];
+          if (customer) openWhatsapp(customer);
+        }}
+        className="mt-5 w-full rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        {action}
+      </button>
     </div>
   );
 }
@@ -682,7 +957,9 @@ function RankingCard({ title, customers }: { title: string; customers: Customer[
       <div className="mt-4 space-y-3">
         {customers.map((customer, index) => (
           <div key={customer.id} className="flex items-center gap-3">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-[color:var(--gold)]/10 text-xs text-gold">{index + 1}</span>
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-[color:var(--gold)]/10 text-xs text-gold">
+              {index + 1}
+            </span>
             <Avatar customer={customer} />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">{customer.name}</div>
@@ -715,22 +992,58 @@ function StatusBadge({ status }: { status: CustomerStatus }) {
 function Avatar({ customer, size = "sm" }: { customer: Customer; size?: "sm" | "lg" }) {
   const classes = size === "lg" ? "h-16 w-16" : "h-9 w-9";
   if (customer.avatar_url) {
-    return <img src={customer.avatar_url} alt={customer.name} className={`${classes} rounded-full object-cover ring-1 ring-[color:var(--gold)]/40`} />;
+    return (
+      <img
+        src={customer.avatar_url}
+        alt={customer.name}
+        className={`${classes} rounded-full object-cover ring-1 ring-[color:var(--gold)]/40`}
+      />
+    );
   }
-  return <div className={`${classes} grid place-items-center rounded-full gradient-gold text-sm font-semibold text-primary-foreground`}>{customer.name.slice(0, 2).toUpperCase()}</div>;
+  return (
+    <div
+      className={`${classes} grid place-items-center rounded-full gradient-gold text-sm font-semibold text-primary-foreground`}
+    >
+      {customer.name.slice(0, 2).toUpperCase()}
+    </div>
+  );
 }
 
-function IconButton({ title, icon: Icon, onClick }: { title: string; icon: any; onClick: () => void }) {
+function IconButton({
+  title,
+  icon: Icon,
+  onClick,
+}: {
+  title: string;
+  icon: LucideIcon;
+  onClick: () => void;
+}) {
   return (
-    <button title={title} type="button" onClick={onClick} className="grid h-8 w-8 place-items-center rounded-lg border border-border text-muted-foreground hover:border-[color:var(--gold)]/60 hover:text-gold transition">
+    <button
+      title={title}
+      type="button"
+      onClick={onClick}
+      className="grid h-8 w-8 place-items-center rounded-lg border border-border text-muted-foreground hover:border-[color:var(--gold)]/60 hover:text-gold transition"
+    >
       <Icon className="h-3.5 w-3.5" />
     </button>
   );
 }
 
-function DrawerAction({ label, icon: Icon, onClick }: { label: string; icon: any; onClick?: () => void }) {
+function DrawerAction({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick?: () => void;
+}) {
   return (
-    <button onClick={onClick} className="rounded-xl border border-border bg-background/40 p-3 text-center text-xs text-muted-foreground hover:border-[color:var(--gold)]/50 hover:text-gold transition">
+    <button
+      onClick={onClick}
+      className="rounded-xl border border-border bg-background/40 p-3 text-center text-xs text-muted-foreground hover:border-[color:var(--gold)]/50 hover:text-gold transition"
+    >
       <Icon className="mx-auto mb-2 h-4 w-4" />
       {label}
     </button>
@@ -746,7 +1059,7 @@ function DrawerBlock({ title, children }: { title: string; children: React.React
   );
 }
 
-function InfoRow({ icon: Icon, value }: { icon: any; value: string }) {
+function InfoRow({ icon: Icon, value }: { icon: LucideIcon; value: string }) {
   return (
     <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
       <Icon className="h-4 w-4 text-gold" />
@@ -764,33 +1077,90 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TextField({ label, value, onChange, type = "text", required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
+function TextField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+}) {
   return (
     <label className="block">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <input required={required} type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-xl bg-background border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition" />
+      <input
+        required={required}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 w-full rounded-xl bg-background border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
+      />
     </label>
   );
 }
 
-function NumberField({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
-  return <TextField label={label} type="number" value={String(value)} onChange={(value) => onChange(Number(value))} />;
+function NumberField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <TextField
+      label={label}
+      type="number"
+      value={String(value)}
+      onChange={(value) => onChange(Number(value))}
+    />
+  );
 }
 
-function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function TextArea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <label className="block">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 min-h-24 w-full rounded-xl bg-background border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition" />
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 min-h-24 w-full rounded-xl bg-background border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
+      />
     </label>
   );
 }
 
-function SelectField({ label, value, onChange }: { label: string; value: CustomerStatus; onChange: (value: string) => void }) {
+function SelectField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: CustomerStatus;
+  onChange: (value: string) => void;
+}) {
   return (
     <label className="block">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-xl bg-background border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition">
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 w-full rounded-xl bg-background border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
+      >
         <option value="active">Ativo</option>
         <option value="missing">Sumido</option>
         <option value="inactive">Inativo</option>
@@ -805,7 +1175,11 @@ function buildMetrics(customers: Customer[]) {
   const vip = customers.filter((customer) => customer.status === "vip").length;
   const inactive = customers.filter((customer) => customer.status === "inactive").length;
   const recurring = customers.filter((customer) => customer.visits >= 3).length;
-  const newThisMonth = customers.filter((customer) => new Date(customer.created_at).getMonth() === 4).length;
+  const now = new Date();
+  const newThisMonth = customers.filter((customer) => {
+    const createdAt = new Date(customer.created_at);
+    return createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear();
+  }).length;
   const spent = customers.reduce((sum, customer) => sum + customer.total_spent, 0);
   const visits = customers.reduce((sum, customer) => sum + customer.visits, 0);
   return {
@@ -822,7 +1196,7 @@ function buildMetrics(customers: Customer[]) {
 
 function daysSince(date: string | null) {
   if (!date) return 999;
-  return Math.floor((new Date("2026-05-21T12:00:00").getTime() - new Date(date).getTime()) / 86400000);
+  return Math.floor((Date.now() - new Date(date).getTime()) / 86400000);
 }
 
 function formatDate(date: string | null) {
@@ -832,11 +1206,18 @@ function formatDate(date: string | null) {
 
 function formatDateTime(date: string | null) {
   if (!date) return "-";
-  return new Date(date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(date).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function fmtCurrency(value: number) {
-  return "R$ " + value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    "R$ " + value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
 }
 
 function toDatetimeLocal(value: string | null) {
