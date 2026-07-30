@@ -62,26 +62,31 @@ alter table public.customer_notes enable row level security;
 alter table public.customer_preferences enable row level security;
 alter table public.customer_loyalty enable row level security;
 
+drop policy if exists "owner manages customers" on public.customers;
 create policy "owner manages customers"
   on public.customers for all to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
+drop policy if exists "owner manages customer history" on public.customer_history;
 create policy "owner manages customer history"
   on public.customer_history for all to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
+drop policy if exists "owner manages customer notes" on public.customer_notes;
 create policy "owner manages customer notes"
   on public.customer_notes for all to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
+drop policy if exists "owner manages customer preferences" on public.customer_preferences;
 create policy "owner manages customer preferences"
   on public.customer_preferences for all to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner');
 
+drop policy if exists "owner manages customer loyalty" on public.customer_loyalty;
 create policy "owner manages customer loyalty"
   on public.customer_loyalty for all to authenticated
   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'owner')

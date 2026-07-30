@@ -12,14 +12,18 @@ const inviteSchema = z.object({
     .transform((value) => value.toLowerCase()),
   title: z.string().trim().min(2).max(120).default("Barbeiro"),
   image: z.union([z.string().trim().url(), z.literal("")]).default(""),
-  commissionRate: z.coerce.number().min(0).max(100).default(30),
+  fixedFee: z.coerce.number().min(0).max(1000000).default(0),
 });
 
 Deno.serve(async (request) => {
-  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "";
+  const allowedOrigins = (Deno.env.get("ALLOWED_ORIGIN") || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   const requestOrigin = request.headers.get("Origin") || "";
+  const originAllowed = !allowedOrigins.length || allowedOrigins.includes(requestOrigin);
   const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin,
+    "Access-Control-Allow-Origin": originAllowed ? requestOrigin : allowedOrigins[0] || "",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
@@ -33,7 +37,7 @@ Deno.serve(async (request) => {
     return json({ error: "Method not allowed." }, 405, corsHeaders);
   }
 
-  if (allowedOrigin && requestOrigin !== allowedOrigin) {
+  if (!originAllowed) {
     return json({ error: "Origin not allowed." }, 403, corsHeaders);
   }
 
@@ -68,7 +72,7 @@ Deno.serve(async (request) => {
     if (!parsedBody.success) {
       return json({ error: "Invalid invitation data." }, 400, corsHeaders);
     }
-    const { name, email, title, image, commissionRate } = parsedBody.data;
+    const { name, email, title, image, fixedFee } = parsedBody.data;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
@@ -77,7 +81,7 @@ Deno.serve(async (request) => {
         title,
         image,
       },
-      redirectTo: `${Deno.env.get("APP_URL") || allowedOrigin}/login`,
+      redirectTo: `${Deno.env.get("APP_URL") || requestOrigin}/set-password`,
     });
 
     if (error) {
@@ -105,7 +109,8 @@ Deno.serve(async (request) => {
       revenue: 0,
       appts: 0,
       commission: 0,
-      commission_rate: commissionRate,
+      commission_rate: 0,
+      fixed_fee: fixedFee,
       email,
       access_status: "pending",
       access_user_id: data.user.id,

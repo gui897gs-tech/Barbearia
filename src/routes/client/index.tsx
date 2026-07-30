@@ -64,7 +64,6 @@ function ClientDashboard() {
   const completed = appointments.filter(
     (appointment) => appointment.status === "Concluído" || appointment.status === "Concluido",
   );
-  const totalSpent = completed.reduce((sum, appointment) => sum + appointment.price, 0);
   const firstName = String(user?.user_metadata?.full_name || "Cliente").split(" ")[0];
 
   async function handleCancel() {
@@ -241,9 +240,8 @@ function ClientDashboard() {
               <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold">
                 Seu histórico
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-4">
+              <div className="mt-5">
                 <Metric label="Visitas concluídas" value={String(completed.length)} />
-                <Metric label="Total investido" value={formatCurrency(totalSpent)} />
               </div>
               <Link
                 to="/client/history"

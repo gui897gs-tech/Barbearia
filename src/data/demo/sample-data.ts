@@ -1,48 +1,33 @@
 export const barbers = [
   {
-    id: "1",
-    name: "Lucas Moreau",
-    title: "Barbeiro Master",
-    rating: 4.9,
-    image: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400&q=80",
+    id: "paulo",
+    name: "Paulo",
+    title: "Barbeiro",
+    rating: 5,
+    image: "/paulo.jfif",
   },
   {
-    id: "2",
-    name: "Adrian Cole",
-    title: "Estilista Sênior",
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400&q=80",
-  },
-  {
-    id: "3",
-    name: "Marco Silva",
-    title: "Especialista em Barba",
-    rating: 4.9,
+    id: "felipe",
+    name: "Felipe",
+    title: "Barbeiro",
+    rating: 5,
     image: "https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?w=400&q=80",
-  },
-  {
-    id: "4",
-    name: "Jordan Hayes",
-    title: "Barbeiro Júnior",
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=400&q=80",
   },
 ];
 
 export const services = [
-  { id: "s1", name: "Corte Signature", duration: 45, price: 120, category: "Cabelo" },
-  { id: "s2", name: "Barba Real", duration: 40, price: 95, category: "Barba" },
+  { id: "s1", name: "Corte Degradê", duration: 45, price: 35, category: "Cabelo" },
+  { id: "s2", name: "Barba", duration: 40, price: 20, category: "Barba" },
   { id: "s3", name: "Modelagem de Barba", duration: 30, price: 65, category: "Barba" },
-  { id: "s4", name: "Ritual Toalha Quente", duration: 25, price: 55, category: "Tratamento" },
-  { id: "s5", name: "Experiência Real", duration: 90, price: 280, category: "Premium" },
-  { id: "s6", name: "Corte Infantil", duration: 30, price: 55, category: "Cabelo" },
+  { id: "s4", name: "Toalha Quente", duration: 25, price: 55, category: "Tratamento" },
+  { id: "s5", name: "Cabelo e Barba", duration: 90, price: 50, category: "Combo" },
+  { id: "s6", name: "Corte Infantil", duration: 30, price: 25, category: "Cabelo" },
 ];
 
 export const products = [
-  { id: "p1", name: "Pomada King's", stock: 24, price: 78, sold: 142 },
-  { id: "p2", name: "Óleo de Barba — Âmbar", stock: 12, price: 64, sold: 98 },
-  { id: "p3", name: "Spray Sal Marinho", stock: 8, price: 52, sold: 67 },
-  { id: "p4", name: "Loção Pós-Barba Cedro", stock: 18, price: 88, sold: 53 },
+  { id: "p1", name: "Pomada Modeladora", stock: 24, price: 45, sold: 142 },
+  { id: "p2", name: "Gel de Cabelo", stock: 18, price: 28, sold: 98 },
+  { id: "p3", name: "Laquê", stock: 12, price: 35, sold: 67 },
 ];
 
 export const appointments = [
@@ -113,7 +98,7 @@ export const appointments = [
 
 export const employeePerf = barbers.map((b, i) => ({
   ...b,
-  revenue: [19680, 16240, 15120, 10480][i],
-  appts: [142, 128, 119, 86][i],
-  commission: [5904, 4872, 4536, 3144][i],
+  revenue: [0, 0][i],
+  appts: [0, 0][i],
+  commission: [0, 0][i],
 }));

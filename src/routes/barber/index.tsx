@@ -65,8 +65,8 @@ function BarberDashboard() {
             />
             <StatCard label="Avaliação" value={`${profile.rating} ★`} icon={Star} />
             <StatCard
-              label="Comissão registrada"
-              value={formatCurrency(profile.commission)}
+              label="Valor fixo mensal"
+              value={formatCurrency(profile.fixedFee ?? 0)}
               icon={TrendingUp}
             />
           </div>

@@ -50,6 +50,7 @@ const navByRole: Record<string, NavItem[]> = {
   client: [
     { to: "/client", label: "Início", icon: LayoutDashboard },
     { to: "/client/book", label: "Agendar", icon: Sparkles },
+    { to: "/client/products", label: "Produtos", icon: Package },
     { to: "/client/history", label: "Histórico", icon: Clock },
     { to: "/client/profile", label: "Perfil", icon: User2 },
   ],

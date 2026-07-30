@@ -154,6 +154,12 @@
 }
 
 @layer base {
+  input[type="date"] {
+    box-sizing: border-box;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+
   * {
     border-color: var(--color-border);
   }
@@ -284,6 +290,10 @@
     border-color: var(--gold);
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--gold) 13%, transparent);
     outline: none;
+  }
+
+  .profile-input.profile-input-with-icon {
+    padding-left: 2.75rem;
   }
 
   .luxury-bg {

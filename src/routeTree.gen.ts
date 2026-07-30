@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ClientRouteImport } from './routes/client'
@@ -26,6 +27,7 @@ import { Route as OwnerEmployeesRouteImport } from './routes/owner/employees'
 import { Route as OwnerCustomersRouteImport } from './routes/owner/customers'
 import { Route as OwnerAppointmentsRouteImport } from './routes/owner/appointments'
 import { Route as ClientProfileRouteImport } from './routes/client/profile'
+import { Route as ClientProductsRouteImport } from './routes/client/products'
 import { Route as ClientHistoryRouteImport } from './routes/client/history'
 import { Route as ClientBookRouteImport } from './routes/client/book'
 import { Route as BarberScheduleRouteImport } from './routes/barber/schedule'
@@ -33,6 +35,11 @@ import { Route as BarberRevenueRouteImport } from './routes/barber/revenue'
 import { Route as BarberProfileRouteImport } from './routes/barber/profile'
 import { Route as BarberHistoryRouteImport } from './routes/barber/history'
 
+const SetPasswordRoute = SetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OwnerRoute = OwnerRouteImport.update({
   id: '/owner',
   path: '/owner',
@@ -118,6 +125,11 @@ const ClientProfileRoute = ClientProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => ClientRoute,
 } as any)
+const ClientProductsRoute = ClientProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => ClientRoute,
+} as any)
 const ClientHistoryRoute = ClientHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -155,12 +167,14 @@ export interface FileRoutesByFullPath {
   '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/owner': typeof OwnerRouteWithChildren
+  '/set-password': typeof SetPasswordRoute
   '/barber/history': typeof BarberHistoryRoute
   '/barber/profile': typeof BarberProfileRoute
   '/barber/revenue': typeof BarberRevenueRoute
   '/barber/schedule': typeof BarberScheduleRoute
   '/client/book': typeof ClientBookRoute
   '/client/history': typeof ClientHistoryRoute
+  '/client/products': typeof ClientProductsRoute
   '/client/profile': typeof ClientProfileRoute
   '/owner/appointments': typeof OwnerAppointmentsRoute
   '/owner/customers': typeof OwnerCustomersRoute
@@ -177,12 +191,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/set-password': typeof SetPasswordRoute
   '/barber/history': typeof BarberHistoryRoute
   '/barber/profile': typeof BarberProfileRoute
   '/barber/revenue': typeof BarberRevenueRoute
   '/barber/schedule': typeof BarberScheduleRoute
   '/client/book': typeof ClientBookRoute
   '/client/history': typeof ClientHistoryRoute
+  '/client/products': typeof ClientProductsRoute
   '/client/profile': typeof ClientProfileRoute
   '/owner/appointments': typeof OwnerAppointmentsRoute
   '/owner/customers': typeof OwnerCustomersRoute
@@ -203,12 +219,14 @@ export interface FileRoutesById {
   '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/owner': typeof OwnerRouteWithChildren
+  '/set-password': typeof SetPasswordRoute
   '/barber/history': typeof BarberHistoryRoute
   '/barber/profile': typeof BarberProfileRoute
   '/barber/revenue': typeof BarberRevenueRoute
   '/barber/schedule': typeof BarberScheduleRoute
   '/client/book': typeof ClientBookRoute
   '/client/history': typeof ClientHistoryRoute
+  '/client/products': typeof ClientProductsRoute
   '/client/profile': typeof ClientProfileRoute
   '/owner/appointments': typeof OwnerAppointmentsRoute
   '/owner/customers': typeof OwnerCustomersRoute
@@ -230,12 +248,14 @@ export interface FileRouteTypes {
     | '/client'
     | '/login'
     | '/owner'
+    | '/set-password'
     | '/barber/history'
     | '/barber/profile'
     | '/barber/revenue'
     | '/barber/schedule'
     | '/client/book'
     | '/client/history'
+    | '/client/products'
     | '/client/profile'
     | '/owner/appointments'
     | '/owner/customers'
@@ -252,12 +272,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/set-password'
     | '/barber/history'
     | '/barber/profile'
     | '/barber/revenue'
     | '/barber/schedule'
     | '/client/book'
     | '/client/history'
+    | '/client/products'
     | '/client/profile'
     | '/owner/appointments'
     | '/owner/customers'
@@ -277,12 +299,14 @@ export interface FileRouteTypes {
     | '/client'
     | '/login'
     | '/owner'
+    | '/set-password'
     | '/barber/history'
     | '/barber/profile'
     | '/barber/revenue'
     | '/barber/schedule'
     | '/client/book'
     | '/client/history'
+    | '/client/products'
     | '/client/profile'
     | '/owner/appointments'
     | '/owner/customers'
@@ -303,10 +327,18 @@ export interface RootRouteChildren {
   ClientRoute: typeof ClientRouteWithChildren
   LoginRoute: typeof LoginRoute
   OwnerRoute: typeof OwnerRouteWithChildren
+  SetPasswordRoute: typeof SetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/set-password': {
+      id: '/set-password'
+      path: '/set-password'
+      fullPath: '/set-password'
+      preLoaderRoute: typeof SetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/owner': {
       id: '/owner'
       path: '/owner'
@@ -426,6 +458,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientProfileRouteImport
       parentRoute: typeof ClientRoute
     }
+    '/client/products': {
+      id: '/client/products'
+      path: '/products'
+      fullPath: '/client/products'
+      preLoaderRoute: typeof ClientProductsRouteImport
+      parentRoute: typeof ClientRoute
+    }
     '/client/history': {
       id: '/client/history'
       path: '/history'
@@ -493,6 +532,7 @@ const BarberRouteWithChildren =
 interface ClientRouteChildren {
   ClientBookRoute: typeof ClientBookRoute
   ClientHistoryRoute: typeof ClientHistoryRoute
+  ClientProductsRoute: typeof ClientProductsRoute
   ClientProfileRoute: typeof ClientProfileRoute
   ClientIndexRoute: typeof ClientIndexRoute
 }
@@ -500,6 +540,7 @@ interface ClientRouteChildren {
 const ClientRouteChildren: ClientRouteChildren = {
   ClientBookRoute: ClientBookRoute,
   ClientHistoryRoute: ClientHistoryRoute,
+  ClientProductsRoute: ClientProductsRoute,
   ClientProfileRoute: ClientProfileRoute,
   ClientIndexRoute: ClientIndexRoute,
 }
@@ -539,6 +580,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientRoute: ClientRouteWithChildren,
   LoginRoute: LoginRoute,
   OwnerRoute: OwnerRouteWithChildren,
+  SetPasswordRoute: SetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

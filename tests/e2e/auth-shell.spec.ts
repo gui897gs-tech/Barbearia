@@ -25,6 +25,24 @@ test("login and signup remain usable while the backend is unavailable", async ({
   await expect(page.getByRole("heading", { name: "Crie sua conta" })).toBeVisible();
   await expect(page.getByLabel("Nome")).toBeVisible();
   await expect(page.getByLabel("Telefone")).toBeVisible();
+  await expect(page.getByLabel("Data de nascimento")).toBeVisible();
+  await expect(page.getByLabel("Data de nascimento")).toHaveAttribute("required", "");
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const dateWidth = document.getElementById("birthDate")?.getBoundingClientRect().width ?? 0;
+        const emailWidth = document.getElementById("email")?.getBoundingClientRect().width ?? 0;
+        return Math.abs(dateWidth - emailWidth) <= 1;
+      }),
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    )
+    .toBe(true);
 });
 
 test("theme choice is persisted", async ({ page }) => {

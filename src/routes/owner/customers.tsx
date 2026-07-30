@@ -12,7 +12,6 @@ import {
   Plus,
   Search,
   Sparkles,
-  Star,
   Trash2,
   UserRound,
   Users,
@@ -20,7 +19,6 @@ import {
   X,
   Phone,
   Mail,
-  MapPin,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -588,14 +586,12 @@ function CustomerDrawer({
       </div>
 
       <DrawerBlock title="Dados">
-        <InfoRow icon={Phone} value={customer.whatsapp} />
         <InfoRow icon={Mail} value={customer.email || "-"} />
+        <InfoRow icon={Phone} value={customer.whatsapp} />
         <InfoRow
           icon={Gift}
           value={customer.birth_date ? `${formatDate(customer.birth_date)}` : "-"}
         />
-        <InfoRow icon={MapPin} value={customer.city || "-"} />
-        <InfoRow icon={Star} value={customer.instagram || "-"} />
       </DrawerBlock>
 
       <DrawerBlock title="Resumo">

@@ -28,6 +28,7 @@ export type EmployeeRecord = (typeof employeePerf)[number] & {
   phone?: string;
   specialties?: string[];
   commissionRate?: number;
+  fixedFee?: number;
 };
 
 export type AppointmentRecord = (typeof appointmentSeed)[number] & {
@@ -115,6 +116,7 @@ type BarberDatabaseRow = {
   phone?: string;
   specialties?: string[];
   commission_rate?: number;
+  fixed_fee?: number;
 };
 
 type AppointmentDatabaseRow = {
@@ -308,12 +310,41 @@ export async function updateBarberAppointmentStatus(
 export async function saveEmployee(employee: EmployeeRecord): Promise<EmployeeRecord> {
   if (supabase) {
     const payload = toBarberRow(employee);
-    const { data, error } = await supabase.from("barbers").upsert(payload).select("*").single();
-    if (error) throwRepositoryError("salvar o profissional", error);
-    return fromBarberRow(data);
+    const result = await supabase.from("barbers").upsert(payload).select("*").single();
+    if (!result.error) return fromBarberRow(result.data);
+
+    // Keep profile creation working while an older remote schema is waiting for
+    // the fixed-fee migration. The configured value is retained in this session
+    // and becomes persistent as soon as the migration is applied.
+    if (isMissingOptionalBarberColumn(result.error)) {
+      const legacyPayload = toLegacyBarberRow(employee);
+      const legacyResult = await supabase
+        .from("barbers")
+        .upsert(legacyPayload)
+        .select("*")
+        .single();
+      if (legacyResult.error) throwRepositoryError("salvar o profissional", legacyResult.error);
+      return { ...fromBarberRow(legacyResult.data), fixedFee: employee.fixedFee ?? 0 };
+    }
+
+    throwRepositoryError("salvar o profissional", result.error);
   }
 
   return upsertLocal(storageKeys.employees, employeePerf, employee);
+}
+
+function isMissingOptionalBarberColumn(error: {
+  code?: string;
+  message?: string;
+  details?: string;
+}) {
+  const description = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+  return (
+    error.code === "PGRST204" ||
+    error.code === "42703" ||
+    description.includes("schema cache") ||
+    description.includes("column")
+  );
 }
 
 export async function deleteEmployee(id: string) {
@@ -655,7 +686,8 @@ function fromBarberRow(row: BarberDatabaseRow): EmployeeRecord {
     bio: row.bio,
     phone: row.phone,
     specialties: row.specialties ?? [],
-    commissionRate: row.commission_rate ?? 30,
+    commissionRate: 0,
+    fixedFee: row.fixed_fee ?? 0,
   };
 }
 
@@ -676,7 +708,25 @@ function toBarberRow(employee: EmployeeRecord) {
     bio: employee.bio,
     phone: employee.phone,
     specialties: employee.specialties ?? [],
-    commission_rate: employee.commissionRate ?? 30,
+    commission_rate: 0,
+    fixed_fee: employee.fixedFee ?? 0,
+  };
+}
+
+function toLegacyBarberRow(employee: EmployeeRecord) {
+  return {
+    id: employee.id,
+    name: employee.name,
+    title: employee.title,
+    rating: employee.rating,
+    image: employee.image,
+    revenue: employee.revenue,
+    appts: employee.appts,
+    commission: 0,
+    email: employee.email,
+    access_status: employee.accessStatus || "local",
+    access_user_id: employee.accessUserId,
+    active: employee.active ?? true,
   };
 }
 

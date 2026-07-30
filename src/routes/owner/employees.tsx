@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   KeyRound,
   Mail,
+  ImagePlus,
   Phone,
   Plus,
   ShieldCheck,
@@ -77,7 +78,7 @@ function EmployeesPage() {
       <PageHeader
         eyebrow="Talentos"
         title="Equipe"
-        subtitle="As mãos por trás de cada corte. Gerencie perfis, acessos e comissões."
+        subtitle="Gerencie perfis, acessos e o valor fixo pago por cada barbeiro."
         action={
           <button
             type="button"
@@ -161,6 +162,10 @@ function EmployeesPage() {
           employee={profileEmployee}
           appointments={appointments}
           onClose={() => setProfileEmployee(null)}
+          onSaved={(saved) => {
+            setEmployees((items) => items.map((item) => (item.id === saved.id ? saved : item)));
+            setProfileEmployee(saved);
+          }}
         />
       )}
     </AppShell>
@@ -177,7 +182,7 @@ function AddEmployeeDialog({
   const [name, setName] = useState("");
   const [title, setTitle] = useState("Barbeiro");
   const [image, setImage] = useState("");
-  const [commissionRate, setCommissionRate] = useState("30");
+  const [fixedFee, setFixedFee] = useState("0");
   const [email, setEmail] = useState("");
   const [createAccess, setCreateAccess] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -208,7 +213,7 @@ function AddEmployeeDialog({
           email: email.trim(),
           title: title.trim(),
           image: image.trim() || defaultImage,
-          commissionRate: Number(commissionRate),
+          fixedFee: Number(fixedFee),
         },
       });
 
@@ -238,7 +243,8 @@ function AddEmployeeDialog({
       revenue: 0,
       appts: 0,
       commission: 0,
-      commissionRate: Number(commissionRate),
+      commissionRate: 0,
+      fixedFee: Number(fixedFee),
       email: email.trim() || undefined,
       accessStatus,
       accessUserId,
@@ -261,12 +267,11 @@ function AddEmployeeDialog({
           <TextField label="URL da foto" value={image} onChange={setImage} />
 
           <TextField
-            label="Taxa de comissão (%)"
-            value={commissionRate}
-            onChange={setCommissionRate}
+            label="Valor fixo mensal pago pelo barbeiro (R$)"
+            value={fixedFee}
+            onChange={setFixedFee}
             type="number"
             min="0"
-            max="100"
             required
           />
 
@@ -336,12 +341,59 @@ function EmployeeProfileDialog({
   employee,
   appointments,
   onClose,
+  onSaved,
 }: {
   employee: Employee;
   appointments: AppointmentRecord[];
   onClose: () => void;
+  onSaved: (employee: Employee) => void;
 }) {
   const performance = getPerformance(employee, appointments);
+  const [image, setImage] = useState(employee.image || "");
+  const [savingImage, setSavingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [imageMessage, setImageMessage] = useState("");
+
+  async function handleImageFile(file: File | undefined) {
+    if (!file) return;
+    setImageError("");
+    setImageMessage("");
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("Escolha uma foto JPG, JPEG, PNG ou WEBP.");
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setImageError("A foto deve ter no máximo 20 MB.");
+      return;
+    }
+
+    try {
+      setImage(await resizeProfileImage(file));
+      setImageMessage("Foto pronta. Clique em “Salvar foto” para concluir.");
+    } catch {
+      setImageError("Não foi possível processar essa imagem. Tente outro arquivo.");
+    }
+  }
+
+  async function handleSaveImage() {
+    setSavingImage(true);
+    setImageError("");
+    try {
+      const saved = await saveEmployee({ ...employee, image: image.trim() });
+      onSaved(saved);
+      setImageMessage("");
+      notifySuccess("Foto do profissional atualizada.");
+    } catch (error) {
+      setImageError(
+        error instanceof Error ? error.message : "Não foi possível salvar a foto. Tente novamente.",
+      );
+      notifyError(error);
+    } finally {
+      setSavingImage(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 px-4 py-6 md:py-10">
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-2xl">
@@ -349,11 +401,12 @@ function EmployeeProfileDialog({
 
         <div className="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
           <div className="text-center">
-            {employee.image ? (
+            {image ? (
               <img
-                src={employee.image}
+                src={image}
                 alt={employee.name}
                 className="h-32 w-32 rounded-full object-cover mx-auto ring-2 ring-[color:var(--gold)]/50"
+                onError={() => setImageError("Não foi possível carregar a imagem informada.")}
               />
             ) : (
               <div className="mx-auto grid h-32 w-32 place-items-center rounded-full bg-accent font-display text-4xl text-gold ring-2 ring-gold/40">
@@ -367,13 +420,72 @@ function EmployeeProfileDialog({
               <Star className="h-4 w-4 fill-current" />
               <span className="text-sm font-medium">{employee.rating}</span>
             </div>
+            <div className="mt-5 rounded-2xl border border-border bg-background/40 p-3 text-left">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <ImagePlus className="h-4 w-4 text-gold" />
+                Alterar foto
+              </div>
+              <label className="mt-3 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[color:var(--gold)]/40 px-3 py-2.5 text-xs text-muted-foreground transition hover:border-[color:var(--gold)] hover:text-foreground">
+                Escolher imagem
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  onChange={(event) => {
+                    void handleImageFile(event.target.files?.[0]);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+              <label
+                className="mt-3 block text-[11px] text-muted-foreground"
+                htmlFor="profile-image-url"
+              >
+                Ou cole a URL da foto
+              </label>
+              <input
+                id="profile-image-url"
+                type="url"
+                value={image.startsWith("data:") ? "" : image}
+                placeholder="https://..."
+                onChange={(event) => {
+                  setImage(event.target.value);
+                  setImageError("");
+                  setImageMessage("");
+                }}
+                className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2 text-xs focus:border-[color:var(--gold)] focus:outline-none"
+              />
+              {imageError && <p className="mt-2 text-[11px] text-destructive">{imageError}</p>}
+              {imageMessage && <p className="mt-2 text-[11px] text-gold">{imageMessage}</p>}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImage("");
+                    setImageError("");
+                    setImageMessage("");
+                  }}
+                  className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Remover
+                </button>
+                <button
+                  type="button"
+                  disabled={savingImage || image === employee.image || Boolean(imageError)}
+                  onClick={handleSaveImage}
+                  className="rounded-xl gradient-gold px-3 py-2 text-xs font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingImage ? "Salvando..." : "Salvar foto"}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <Metric label="Faturamento" value={formatCurrency(performance.revenue)} />
               <Metric label="Atendimentos" value={String(performance.appointments)} />
-              <Metric label="Comissão" value={formatCurrency(performance.commission)} />
+              <Metric label="Valor fixo" value={formatCurrency(performance.fixedFee)} />
             </div>
 
             <div className="rounded-2xl border border-border bg-background/40 p-4">
@@ -420,6 +532,37 @@ function EmployeeProfileDialog({
   );
 }
 
+function resizeProfileImage(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const source = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    source.onload = () => {
+      const maxSize = 480;
+      const sourceSize = Math.min(source.width, source.height);
+      const sourceX = Math.max(0, (source.width - sourceSize) / 2);
+      const sourceY = Math.max(0, (source.height - sourceSize) / 2);
+      const canvas = document.createElement("canvas");
+      canvas.width = maxSize;
+      canvas.height = maxSize;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Canvas indisponível."));
+        return;
+      }
+      context.drawImage(source, sourceX, sourceY, sourceSize, sourceSize, 0, 0, maxSize, maxSize);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL("image/jpeg", 0.72));
+    };
+    source.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Imagem inválida."));
+    };
+    source.src = objectUrl;
+  });
+}
+
 function getPerformance(employee: Employee, appointments: AppointmentRecord[]) {
   const completed = appointments.filter(
     (appointment) =>
@@ -427,8 +570,7 @@ function getPerformance(employee: Employee, appointments: AppointmentRecord[]) {
       isCompletedStatus(appointment.status),
   );
   const revenue = completed.reduce((sum, appointment) => sum + appointment.price, 0);
-  const rate = employee.commissionRate ?? 30;
-  return { appointments: completed.length, revenue, commission: revenue * (rate / 100) };
+  return { appointments: completed.length, revenue, fixedFee: employee.fixedFee ?? 0 };
 }
 
 function DialogHeader({

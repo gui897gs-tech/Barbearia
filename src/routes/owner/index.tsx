@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell, PageHeader, StatCard } from "@/components/layout/app-shell";
 import {
   AppointmentRecord,
@@ -28,6 +28,7 @@ import {
 } from "recharts";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 import { formatCurrency, formatDateKey, isCompletedStatus } from "@/shared/utils/format";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/owner/")({
   head: () => ({ meta: [{ title: "Painel do Dono - King's Barber" }] }),
@@ -41,8 +42,8 @@ function OwnerDashboard() {
   const [addingAppointment, setAddingAppointment] = useState(false);
   const [revenueRange, setRevenueRange] = useState<"Semana" | "Mês" | "Ano">("Semana");
 
-  useEffect(() => {
-    void Promise.all([listAppointments(), listEmployees(), listProducts()])
+  const refreshDashboard = useCallback(async () => {
+    await Promise.all([listAppointments(), listEmployees(), listProducts()])
       .then(([appointments, employeeRows, products]) => {
         setAppointmentList(appointments);
         setEmployees(employeeRows);
@@ -50,6 +51,33 @@ function OwnerDashboard() {
       })
       .catch(notifyError);
   }, []);
+
+  useEffect(() => {
+    void refreshDashboard();
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") void refreshDashboard();
+    };
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    const interval = window.setInterval(() => void refreshDashboard(), 10_000);
+    const channel = supabase
+      ?.channel("owner-dashboard-appointments")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" },
+        () => void refreshDashboard(),
+      )
+      .subscribe();
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      if (channel && supabase) void supabase.removeChannel(channel);
+    };
+  }, [refreshDashboard]);
 
   async function handleCreate(appointment: Appointment) {
     try {
@@ -69,10 +97,10 @@ function OwnerDashboard() {
   const todayAppointments = appointmentList.filter(
     (appointment) => appointment.appointment_date === todayKey,
   );
-  const completedToday = todayAppointments.filter((appointment) =>
+  const completedAppointments = appointmentList.filter((appointment) =>
     isCompletedStatus(appointment.status),
   );
-  const todayRevenue = sumRevenue(completedToday);
+  const totalRevenue = sumRevenue(completedAppointments);
   const chartConfig = getRevenueChartConfig(revenueRange, appointmentList);
   const annualChart = getRevenueChartConfig("Ano", appointmentList);
   const activeEmployees = employees.filter((employee) => employee.active !== false);
@@ -107,15 +135,15 @@ function OwnerDashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard
-          label="Faturamento de hoje"
-          value={formatCurrency(todayRevenue)}
-          delta="Atendimentos concluídos"
+          label="Faturamento total"
+          value={formatCurrency(totalRevenue)}
+          delta={`${completedAppointments.length} atendimentos concluídos`}
           icon={DollarSign}
         />
         <StatCard
           label="Agendamentos"
-          value={String(todayAppointments.length)}
-          delta="Hoje"
+          value={String(appointmentList.length)}
+          delta={`${todayAppointments.length} hoje`}
           icon={Calendar}
         />
         <StatCard
@@ -126,8 +154,10 @@ function OwnerDashboard() {
         />
         <StatCard
           label="Ticket médio"
-          value={formatCurrency(completedToday.length ? todayRevenue / completedToday.length : 0)}
-          delta={`${completedToday.length} concluídos hoje`}
+          value={formatCurrency(
+            completedAppointments.length ? totalRevenue / completedAppointments.length : 0,
+          )}
+          delta={`${completedAppointments.length} concluídos no total`}
           icon={TrendingUp}
         />
       </div>
