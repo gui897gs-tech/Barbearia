@@ -9,7 +9,7 @@ O cadastro publico do site continua criando apenas contas de cliente.
 2. Vincule o projeto:
 
 ```bash
-supabase link --project-ref codpqtkvrmgbhfgzkqqr
+supabase link --project-ref kxpolmoscayjztpyhbmh
 ```
 
 3. Aplique todas as migrações, na ordem numérica:
@@ -34,16 +34,27 @@ A funcao usa as variaveis padrao do Supabase:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `ALLOWED_ORIGIN`: origem exata do site, por exemplo `https://agenda.exemplo.com`.
+- `ALLOWED_ORIGIN`: uma ou mais origens exatas, separadas por vírgula.
 - `APP_URL`: URL pública usada no retorno do convite por e-mail.
 
 Configure os dois segredos específicos:
 
 ```bash
-supabase secrets set ALLOWED_ORIGIN=https://agenda.exemplo.com APP_URL=https://agenda.exemplo.com
+supabase secrets set ALLOWED_ORIGIN=http://localhost:4199 APP_URL=http://localhost:4199
 ```
 
 Nunca coloque a service role key no `.env.local` do Vite. Ela deve ficar somente no ambiente seguro da Edge Function.
+
+Para aceitar o ambiente local e o site publicado ao mesmo tempo:
+
+```bash
+supabase secrets set "ALLOWED_ORIGIN=http://localhost:4199,https://seu-site.com" APP_URL=https://seu-site.com
+```
+
+As migrações `202607230010`, `202607230011` e `202607230012` adicionam,
+respectivamente, data de nascimento no cadastro, catálogo para clientes e o valor
+fixo mensal dos barbeiros. Elas precisam estar aplicadas antes de testar os
+convites atualizados.
 
 ## Primeiro dono
 

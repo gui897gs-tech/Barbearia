@@ -75,6 +75,13 @@ test("client completes the booking flow and sees the resulting history", async (
   await expect(page.getByRole("heading", { name: "Histórico de agendamentos" })).toBeVisible();
   await expect(page.getByText("Agendamento confirmado.")).toBeVisible();
   await expectNoHorizontalOverflow(page);
+
+  await page.goto("/client/products");
+  await expect(page.getByRole("heading", { name: "Produtos" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pomada Modeladora" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gel de Cabelo" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Laquê" })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
 });
 
 async function captureBothThemes(page: Page, testInfo: TestInfo, stem: string) {

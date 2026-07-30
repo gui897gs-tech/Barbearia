@@ -4,7 +4,9 @@ export default defineConfig({
   testDir: "./tests/e2e",
   outputDir: "./test-results/playwright",
   fullyParallel: false,
-  workers: 2,
+  // TanStack Start's development SSR server can reset concurrent connections on Windows.
+  // A single worker keeps the E2E suite deterministic across desktop and mobile projects.
+  workers: 1,
   expect: { timeout: 10_000 },
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",

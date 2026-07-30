@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { addDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Check, Clock, Loader2, Star } from "lucide-react";
+import { AlertTriangle, Check, Clock, Loader2, RefreshCw, Star } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { formatCurrency } from "@/shared/utils/format";
@@ -27,7 +27,7 @@ function BookFlow() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const bookingDates = useMemo(
-    () => Array.from({ length: 14 }, (_, index) => addDays(new Date(), index)),
+    () => Array.from({ length: 5 }, (_, index) => addDays(new Date(), index)),
     [],
   );
   const [step, setStep] = useState(0);
@@ -39,23 +39,36 @@ function BookFlow() {
   const [time, setTime] = useState("");
   const [times, setTimes] = useState<string[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [optionsError, setOptionsError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
   const [loadingTimes, setLoadingTimes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let active = true;
+    setLoadingOptions(true);
+    setOptionsError("");
 
     void Promise.all([listEmployees(), listServices()])
       .then(([employeeRows, serviceRows]) => {
         if (!active) return;
-        const activeBarbers = employeeRows.filter((employee) => employee.active !== false);
+        const activeBarbers = employeeRows
+          .filter((employee) => employee.active !== false)
+          .sort((first, second) => barberDisplayOrder(first) - barberDisplayOrder(second));
         const activeServices = serviceRows.filter((item) => item.active !== false);
         setBarbers(activeBarbers);
         setServices(activeServices);
         setBarber(activeBarbers[0] ?? null);
         setService(activeServices[0] ?? null);
       })
-      .catch(notifyError)
+      .catch((error) => {
+        if (!active) return;
+        setBarbers([]);
+        setServices([]);
+        setBarber(null);
+        setService(null);
+        setOptionsError(getOptionsErrorMessage(error));
+      })
       .finally(() => {
         if (active) setLoadingOptions(false);
       });
@@ -63,7 +76,7 @@ function BookFlow() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   useEffect(() => {
     if (!barber || !service || !date) return;
@@ -134,9 +147,9 @@ function BookFlow() {
       />
 
       <div className="glass-card mb-6 rounded-2xl p-4 md:p-6">
-        <div className="flex items-center justify-between overflow-x-auto scrollbar-none">
+        <div className="grid grid-cols-5 gap-2 md:flex md:items-center md:justify-between">
           {steps.map((label, index) => (
-            <div key={label} className="flex shrink-0 items-center gap-3">
+            <div key={label} className="flex min-w-0 items-center justify-center gap-3 md:shrink-0">
               <div
                 className={`grid h-9 w-9 place-items-center rounded-full text-sm font-medium transition ${
                   index < step
@@ -150,7 +163,7 @@ function BookFlow() {
                 {index < step ? <Check className="h-4 w-4" /> : index + 1}
               </div>
               <div
-                className={`text-sm font-medium ${index === step ? "text-foreground" : "text-muted-foreground"}`}
+                className={`hidden text-sm font-medium md:block ${index === step ? "text-foreground" : "text-muted-foreground"}`}
               >
                 {label}
               </div>
@@ -165,71 +178,83 @@ function BookFlow() {
       <div className="glass-card min-h-[420px] rounded-3xl p-6 md:p-10">
         {loadingOptions ? (
           <LoadingState label="Carregando profissionais e serviços" />
+        ) : optionsError ? (
+          <SetupError message={optionsError} onRetry={() => setReloadKey((value) => value + 1)} />
         ) : (
           <>
             {step === 0 && (
               <section>
                 <h2 className="mb-6 font-display text-2xl">Escolha seu barbeiro</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {barbers.map((item) => (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => setBarber(item)}
-                      aria-pressed={barber?.id === item.id}
-                      className={`rounded-2xl border p-5 text-left transition ${
-                        barber?.id === item.id
-                          ? "border-[color:var(--gold)] ring-1 ring-[color:var(--gold)] gold-glow"
-                          : "border-border hover:border-[color:var(--gold)]/40"
-                      }`}
-                    >
-                      <img
-                        src={item.image}
-                        alt={`Foto de ${item.name}`}
-                        className="mx-auto h-20 w-20 rounded-full object-cover ring-2 ring-[color:var(--gold)]/30"
-                      />
-                      <div className="mt-3 text-center font-display text-lg">{item.name}</div>
-                      <div className="text-center text-xs text-muted-foreground">{item.title}</div>
-                      <div className="mt-2 flex items-center justify-center gap-1 text-sm text-gold">
-                        <Star className="h-3.5 w-3.5 fill-current" /> {item.rating}
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                {barbers.length ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {barbers.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => setBarber(item)}
+                        aria-pressed={barber?.id === item.id}
+                        className={`rounded-2xl border p-5 text-left transition ${
+                          barber?.id === item.id
+                            ? "border-[color:var(--gold)] ring-1 ring-[color:var(--gold)] gold-glow"
+                            : "border-border hover:border-[color:var(--gold)]/40"
+                        }`}
+                      >
+                        <img
+                          src={item.image}
+                          alt={`Foto de ${item.name}`}
+                          className="mx-auto h-20 w-20 rounded-full object-cover ring-2 ring-[color:var(--gold)]/30"
+                        />
+                        <div className="mt-3 text-center font-display text-lg">{item.name}</div>
+                        <div className="text-center text-xs text-muted-foreground">
+                          {item.title}
+                        </div>
+                        <div className="mt-2 flex items-center justify-center gap-1 text-sm text-gold">
+                          <Star className="h-3.5 w-3.5 fill-current" /> {item.rating}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState message="Nenhum barbeiro ativo foi cadastrado. Peça ao proprietário para configurar a equipe." />
+                )}
               </section>
             )}
 
             {step === 1 && (
               <section>
                 <h2 className="mb-6 font-display text-2xl">Selecione um serviço</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {services.map((item) => (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => setService(item)}
-                      aria-pressed={service?.id === item.id}
-                      className={`rounded-2xl border p-5 text-left transition ${
-                        service?.id === item.id
-                          ? "border-[color:var(--gold)] gold-glow"
-                          : "border-border hover:border-[color:var(--gold)]/40"
-                      }`}
-                    >
-                      <div className="text-[11px] uppercase tracking-[0.2em] text-gold">
-                        {item.category}
-                      </div>
-                      <div className="mt-2 font-display text-lg">{item.name}</div>
-                      <div className="mt-4 flex items-end justify-between">
-                        <div className="font-display text-2xl text-gradient-gold">
-                          {formatCurrency(item.price)}
+                {services.length ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {services.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => setService(item)}
+                        aria-pressed={service?.id === item.id}
+                        className={`rounded-2xl border p-5 text-left transition ${
+                          service?.id === item.id
+                            ? "border-[color:var(--gold)] gold-glow"
+                            : "border-border hover:border-[color:var(--gold)]/40"
+                        }`}
+                      >
+                        <div className="text-[11px] uppercase tracking-[0.2em] text-gold">
+                          {item.category}
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" /> {item.duration} min
+                        <div className="mt-2 font-display text-lg">{item.name}</div>
+                        <div className="mt-4 flex items-end justify-between">
+                          <div className="font-display text-2xl text-gradient-gold">
+                            {formatCurrency(item.price)}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" /> {item.duration} min
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState message="Nenhum serviço ativo foi cadastrado. Peça ao proprietário para configurar o catálogo." />
+                )}
               </section>
             )}
 
@@ -382,6 +407,49 @@ function LoadingState({ label }: { label: string }) {
       {label}
     </div>
   );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+      {message}
+    </div>
+  );
+}
+
+function SetupError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="mx-auto flex max-w-xl flex-col items-center rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+      <AlertTriangle className="h-8 w-8 text-destructive" />
+      <h2 className="mt-4 font-display text-xl">Agenda temporariamente indisponível</h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-5 inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-medium"
+      >
+        <RefreshCw className="h-4 w-4" /> Tentar novamente
+      </button>
+    </div>
+  );
+}
+
+function getOptionsErrorMessage(error: unknown) {
+  const cause = error instanceof Error ? error.cause : undefined;
+  const code =
+    cause && typeof cause === "object" && "code" in cause ? String(cause.code ?? "") : "";
+
+  if (code === "PGRST205" || code === "PGRST202") {
+    return "O banco de dados ainda não recebeu as tabelas da aplicação. Execute as migrações do Supabase e tente novamente.";
+  }
+
+  return "Não foi possível carregar os barbeiros e serviços. Verifique a conexão com o Supabase e tente novamente.";
+}
+
+function barberDisplayOrder(barber: EmployeeRecord) {
+  if (barber.id === "paulo" || barber.name.toLocaleLowerCase("pt-BR") === "paulo") return 0;
+  if (barber.id === "felipe" || barber.name.toLocaleLowerCase("pt-BR") === "felipe") return 1;
+  return 2;
 }
 
 function formatDateLabel(value: string) {

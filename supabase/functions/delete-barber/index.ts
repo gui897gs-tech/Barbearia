@@ -4,10 +4,14 @@ import { z } from "npm:zod@3.24.2";
 const deleteSchema = z.object({ barberId: z.string().min(1).max(100) });
 
 Deno.serve(async (request) => {
-  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "";
+  const allowedOrigins = (Deno.env.get("ALLOWED_ORIGIN") || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   const requestOrigin = request.headers.get("Origin") || "";
+  const originAllowed = !allowedOrigins.length || allowedOrigins.includes(requestOrigin);
   const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin,
+    "Access-Control-Allow-Origin": originAllowed ? requestOrigin : allowedOrigins[0] || "",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
@@ -15,7 +19,7 @@ Deno.serve(async (request) => {
 
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, corsHeaders);
-  if (allowedOrigin && requestOrigin !== allowedOrigin) {
+  if (!originAllowed) {
     return json({ error: "Origin not allowed." }, 403, corsHeaders);
   }
 

@@ -28,23 +28,26 @@ function LoginPage() {
   const navigate = useNavigate();
   const { initialized, user } = useAuth();
   const { redirect } = Route.useSearch();
+  const isPasswordSetup = false;
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
 
   useEffect(() => {
-    if (initialized && user) {
+    if (initialized && user && !isPasswordSetup) {
       const role = getUserRole(user);
       navigate({ to: getSafeRedirect(redirect, role) || getRoleHome(role) });
     }
-  }, [initialized, navigate, redirect, user]);
+  }, [initialized, isPasswordSetup, navigate, redirect, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,6 +61,32 @@ function LoginPage() {
       return;
     }
 
+    if (isPasswordSetup) {
+      if (!user) {
+        setError("Este convite é inválido ou expirou. Solicite um novo convite ao proprietário.");
+        return;
+      }
+      if (password.length < 8) {
+        setError("Use uma senha com pelo menos 8 caracteres.");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("As senhas não conferem.");
+        return;
+      }
+
+      setLoading(true);
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      setLoading(false);
+      if (updateError) {
+        setError(getAuthMessage(updateError.message));
+        return;
+      }
+
+      navigate({ to: getRoleHome(getUserRole(user)) });
+      return;
+    }
+
     if (mode === "signup") {
       if (fullName.trim().length < 3) {
         setError("Informe seu nome completo para criar a conta.");
@@ -66,6 +95,11 @@ function LoginPage() {
 
       if (phone.replace(/\D/g, "").length < 10) {
         setError("Informe um telefone valido para criar a conta.");
+        return;
+      }
+
+      if (!birthDate || birthDate > new Date().toISOString().slice(0, 10)) {
+        setError("Informe uma data de nascimento valida para criar a conta.");
         return;
       }
 
@@ -97,6 +131,7 @@ function LoginPage() {
         ? await createClientAccount({
             fullName: fullName.trim(),
             phone: phone.trim(),
+            birthDate,
             email: credentials.email,
             password,
           })
@@ -126,6 +161,36 @@ function LoginPage() {
 
     const role = getUserRole(data.user);
     navigate({ to: getSafeRedirect(redirect, role) || getRoleHome(role) });
+  }
+
+  async function handlePasswordRecovery() {
+    setError("");
+    setMessage("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError("Informe seu e-mail para receber o link de redefinição.");
+      return;
+    }
+    if (!supabase) {
+      setError("O login ainda não está conectado ao Supabase.");
+      return;
+    }
+
+    setRecoveryLoading(true);
+    const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/set-password`,
+    });
+    setRecoveryLoading(false);
+
+    if (recoveryError) {
+      setError(getAuthMessage(recoveryError.message));
+      return;
+    }
+
+    setMessage(
+      "Se esse e-mail estiver cadastrado, você receberá um link para criar uma nova senha. Confira também o spam.",
+    );
   }
 
   return (
@@ -183,48 +248,56 @@ function LoginPage() {
 
           <div className="text-[11px] uppercase tracking-[0.25em] text-gold">Acesso seguro</div>
           <h2 className="font-display text-3xl md:text-4xl mt-2">
-            {mode === "login" ? "Entre na sua barbearia" : "Crie sua conta"}
+            {isPasswordSetup
+              ? "Defina sua senha"
+              : mode === "login"
+                ? "Entre na sua barbearia"
+                : "Crie sua conta"}
           </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            {mode === "login"
-              ? "Use seu e-mail e senha cadastrados."
-              : "Cadastre seus dados para acessar com segurança."}
+            {isPasswordSetup
+              ? "Finalize seu convite para acessar a área do barbeiro."
+              : mode === "login"
+                ? "Use seu e-mail e senha cadastrados."
+                : "Cadastre seus dados para acessar com segurança."}
           </p>
 
-          <div className="mt-6 grid grid-cols-2 rounded-xl border border-border bg-card/70 p-1">
-            <button
-              type="button"
-              disabled={!initialized}
-              onClick={() => {
-                setMode("login");
-                setError("");
-                setMessage("");
-              }}
-              className={`rounded-lg px-4 py-2 text-sm transition ${
-                mode === "login"
-                  ? "gradient-gold text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              disabled={!initialized}
-              onClick={() => {
-                setMode("signup");
-                setError("");
-                setMessage("");
-              }}
-              className={`rounded-lg px-4 py-2 text-sm transition ${
-                mode === "signup"
-                  ? "gradient-gold text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Criar conta
-            </button>
-          </div>
+          {!isPasswordSetup && (
+            <div className="mt-6 grid grid-cols-2 rounded-xl border border-border bg-card/70 p-1">
+              <button
+                type="button"
+                disabled={!initialized}
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                  setMessage("");
+                }}
+                className={`rounded-lg px-4 py-2 text-sm transition ${
+                  mode === "login"
+                    ? "gradient-gold text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Entrar
+              </button>
+              <button
+                type="button"
+                disabled={!initialized}
+                onClick={() => {
+                  setMode("signup");
+                  setError("");
+                  setMessage("");
+                }}
+                className={`rounded-lg px-4 py-2 text-sm transition ${
+                  mode === "signup"
+                    ? "gradient-gold text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Criar conta
+              </button>
+            </div>
+          )}
 
           {!isSupabaseConfigured && (
             <div className="mt-6 rounded-xl border border-[color:var(--gold)]/40 bg-accent/40 p-3 text-xs text-muted-foreground">
@@ -246,7 +319,7 @@ function LoginPage() {
                   autoComplete="name"
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
-                  className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
+                  className="mt-1 block w-full min-w-0 max-w-full appearance-none rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
                 />
               </div>
             )}
@@ -269,20 +342,40 @@ function LoginPage() {
               </div>
             )}
 
-            <div>
-              <label className="text-xs text-muted-foreground" htmlFor="email">
-                E-mail
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
-              />
-            </div>
+            {mode === "signup" && (
+              <div>
+                <label className="text-xs text-muted-foreground" htmlFor="birthDate">
+                  Data de nascimento
+                </label>
+                <input
+                  id="birthDate"
+                  type="date"
+                  required
+                  autoComplete="bday"
+                  max={new Date().toISOString().slice(0, 10)}
+                  value={birthDate}
+                  onChange={(event) => setBirthDate(event.target.value)}
+                  className="mt-1 block w-full min-w-0 max-w-full appearance-none rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
+                />
+              </div>
+            )}
+
+            {!isPasswordSetup && (
+              <div>
+                <label className="text-xs text-muted-foreground" htmlFor="email">
+                  E-mail
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
+                />
+              </div>
+            )}
 
             <div>
               <label className="text-xs text-muted-foreground" htmlFor="password">
@@ -291,21 +384,34 @@ function LoginPage() {
               <input
                 id="password"
                 type="password"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete={
+                  isPasswordSetup || mode === "signup" ? "new-password" : "current-password"
+                }
                 required
-                minLength={mode === "signup" ? 8 : 6}
+                minLength={isPasswordSetup || mode === "signup" ? 8 : 6}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
               />
-              {mode === "signup" && (
+              {(isPasswordSetup || mode === "signup") && (
                 <div className="mt-1 text-[11px] text-muted-foreground">
                   Use pelo menos 8 caracteres.
                 </div>
               )}
             </div>
 
-            {mode === "signup" && (
+            {mode === "login" && (
+              <button
+                type="button"
+                disabled={loading || recoveryLoading || !initialized}
+                onClick={handlePasswordRecovery}
+                className="w-full text-right text-xs text-muted-foreground transition hover:text-gold disabled:opacity-70"
+              >
+                {recoveryLoading ? "Enviando link..." : "Esqueci minha senha"}
+              </button>
+            )}
+
+            {(isPasswordSetup || mode === "signup") && (
               <div>
                 <label className="text-xs text-muted-foreground" htmlFor="confirmPassword">
                   Confirmar senha
@@ -362,22 +468,30 @@ function LoginPage() {
               className="flex w-full items-center justify-center gap-2 rounded-xl gradient-gold px-5 py-3 text-sm font-semibold text-primary-foreground gold-glow disabled:cursor-not-allowed disabled:opacity-70"
             >
               <Lock className="h-4 w-4" />
-              {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta segura"}
+              {loading
+                ? "Aguarde..."
+                : isPasswordSetup
+                  ? "Salvar senha e acessar"
+                  : mode === "login"
+                    ? "Entrar"
+                    : "Criar conta segura"}
             </button>
           </form>
 
-          <button
-            type="button"
-            disabled={!initialized}
-            onClick={() => {
-              setMode((current) => (current === "login" ? "signup" : "login"));
-              setError("");
-              setMessage("");
-            }}
-            className="mt-6 w-full text-center text-xs text-muted-foreground hover:text-gold transition"
-          >
-            {mode === "login" ? "Ainda não tem conta? Criar cadastro" : "Já tenho conta. Entrar"}
-          </button>
+          {!isPasswordSetup && (
+            <button
+              type="button"
+              disabled={!initialized}
+              onClick={() => {
+                setMode((current) => (current === "login" ? "signup" : "login"));
+                setError("");
+                setMessage("");
+              }}
+              className="mt-6 w-full text-center text-xs text-muted-foreground hover:text-gold transition"
+            >
+              {mode === "login" ? "Ainda não tem conta? Criar cadastro" : "Já tenho conta. Entrar"}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -425,11 +539,13 @@ function getAuthMessage(message: string) {
 async function createClientAccount({
   fullName,
   phone,
+  birthDate,
   email,
   password,
 }: {
   fullName: string;
   phone: string;
+  birthDate: string;
   email: string;
   password: string;
 }) {
@@ -444,6 +560,7 @@ async function createClientAccount({
       data: {
         full_name: fullName,
         phone,
+        birth_date: birthDate,
       },
     },
   });
