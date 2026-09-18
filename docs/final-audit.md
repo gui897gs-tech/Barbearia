@@ -45,7 +45,7 @@ Atualizada em: 18 de setembro de 2026
 - Fotos de perfil e produtos possuem upload validado, redimensionamento no cliente e buckets com políticas próprias no Supabase Storage. URLs HTTPS ainda são aceitas em alguns cadastros administrativos.
 - O limite de convites é atômico e compartilhado no PostgreSQL. Em produção com alto volume ou ataques distribuídos, complemente com rate limiting no gateway/WAF.
 - O guard de navegação é executado no `beforeLoad` do cliente e repetido no `AppShell`; a autorização real permanece nas políticas RLS. A sessão usa `sessionStorage`, reduzindo a persistência do token após o fechamento do navegador. Para autenticação SSR completa e token inacessível ao JavaScript, ainda será necessário migrar para cookies HTTP-only com `@supabase/ssr`.
-- Não existe integração de observabilidade externa, alerta operacional, rotina de backup testada ou recuperação automatizada. Os logs estão estruturados e sanitizados, mas a operação ainda precisa escolher e configurar essas ferramentas.
+- O GitHub Actions verifica aplicação, headers de segurança e API Supabase a cada 30 minutos. Ainda não existe integração de observabilidade externa nem rotina de restauração automatizada; a operação precisa escolher retenção, destino e ambiente isolado de restore.
 
 ## Dependências e alertas conhecidos
 
@@ -63,8 +63,7 @@ Atualizada em: 18 de setembro de 2026
 
 ## Pendências operacionais antes de ampliar o uso com clientes reais
 
-- **Operação:** configure alertas, monitoramento e realize ao menos um teste de restauração de backup antes de armazenar dados pessoais de clientes reais.
-- **Rastreabilidade:** consolide as alterações no Git, publique um deployment a partir do mesmo commit homologado e mantenha o CI obrigatório.
+- **Operação:** o monitoramento sintético básico está configurado no GitHub Actions. Ainda é necessário realizar um teste de restauração de backup em ambiente separado antes de armazenar dados pessoais em escala.
 
 ## Pendências operacionais não bloqueantes após a homologação
 
@@ -75,7 +74,7 @@ Atualizada em: 18 de setembro de 2026
 - **Financeiro parcial:** não há despesas, custo de produto, vendas avulsas, meios de pagamento, taxas ou fluxo de caixa; qualquer cálculo de lucro seria incorreto e por isso não foi exibido.
 - **Cadastro administrativo parcial:** um agendamento criado pelo proprietário com apenas o nome não encontra nem vincula automaticamente uma conta de cliente existente.
 - **Mídia parcial:** upload e redimensionamento já existem para perfis e produtos; ainda faltam moderação de conteúdo e ciclo automático de exclusão de objetos substituídos no Storage.
-- **Operação parcial:** faltam observabilidade externa, alertas, rotina de backup/restauração testada e procedimento formal de resposta a incidentes.
+- **Operação parcial:** existe monitoramento sintético com alerta por falha do GitHub Actions; ainda faltam observabilidade externa, rotina de backup/restauração testada e procedimento formal de resposta a incidentes.
 
 ### Riscos de segurança residuais
 
@@ -84,4 +83,4 @@ Atualizada em: 18 de setembro de 2026
 - **Imagens externas:** permitir qualquer origem HTTPS em `img-src` protege contra conteúdo misto, mas não oferece allowlist nem controle sobre rastreamento do host da imagem.
 - **Toolchain:** o adaptador Nitro está em desenvolvimento ativo e deve acompanhar as atualizações oficiais do TanStack Start/Vercel. O build, SSR e rotas precisam continuar cobertos pelo CI a cada atualização.
 
-Não foi encontrada falha TypeScript, lint, teste unitário, E2E local, build ou homologação Supabase ainda aberta. O principal risco residual é operacional: monitoramento, alertas e restauração de backup ainda precisam de uma política contínua.
+Não foi encontrada falha TypeScript, lint, teste unitário, E2E local, build ou homologação Supabase ainda aberta. O principal risco residual é operacional: retenção, restauração de backup e resposta a incidentes ainda precisam de uma política contínua.
