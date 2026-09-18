@@ -14,8 +14,16 @@ export type ServiceRecord = (typeof serviceSeed)[number] & {
 };
 
 export type ProductRecord = (typeof productSeed)[number] & {
+  image?: string;
   active?: boolean;
   created_at?: string;
+};
+
+export type BarberServicePrice = {
+  barber_id: string;
+  service_id: string;
+  price: number;
+  updated_at?: string;
 };
 
 export type EmployeeRecord = (typeof employeePerf)[number] & {
@@ -48,6 +56,7 @@ const storageKeys = {
   employees: "kings-barber-employees",
   appointments: "kings-barber-appointments",
   settings: "kings-barber-settings",
+  barberServicePrices: "kings-barber-service-prices",
 };
 
 export type BusinessSettingsRecord = {
@@ -94,6 +103,7 @@ type ProductDatabaseRow = {
   stock: number;
   price: number;
   sold: number;
+  image?: string | null;
   active?: boolean;
   created_at?: string;
 };
@@ -168,6 +178,77 @@ export async function deleteService(id: string) {
   deleteLocal(storageKeys.services, serviceSeed, id);
 }
 
+export async function listBarberServicePrices(): Promise<BarberServicePrice[]> {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("barber_service_prices")
+      .select("barber_id,service_id,price,updated_at")
+      .order("barber_id");
+    if (error) throwRepositoryError("carregar os preços por profissional", error);
+    return (data ?? []).map((row) => ({ ...row, price: Number(row.price) }));
+  }
+
+  return readLocal<BarberServicePrice & { id: string }>(storageKeys.barberServicePrices, []).map(
+    ({ id: _id, ...row }) => row,
+  );
+}
+
+export async function saveBarberServicePrice(
+  barberId: string,
+  serviceId: string,
+  price: number | null,
+): Promise<void> {
+  if (price !== null && (!Number.isFinite(price) || price < 0)) {
+    throw new Error("Informe um preço válido.");
+  }
+
+  if (supabase) {
+    const query = supabase
+      .from("barber_service_prices")
+      .delete()
+      .eq("barber_id", barberId)
+      .eq("service_id", serviceId);
+    if (price === null) {
+      const { error } = await query;
+      if (error) throwRepositoryError("remover o preço personalizado", error);
+      return;
+    }
+
+    const { error } = await supabase.from("barber_service_prices").upsert({
+      barber_id: barberId,
+      service_id: serviceId,
+      price,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throwRepositoryError("salvar o preço por profissional", error);
+    return;
+  }
+
+  const id = `${barberId}:${serviceId}`;
+  if (price === null) {
+    deleteLocal(storageKeys.barberServicePrices, [], id);
+    return;
+  }
+  upsertLocal(storageKeys.barberServicePrices, [], {
+    id,
+    barber_id: barberId,
+    service_id: serviceId,
+    price,
+  });
+}
+
+export function resolveBarberServicePrice(
+  prices: BarberServicePrice[],
+  barberId: string,
+  serviceId: string,
+  defaultPrice: number,
+) {
+  return (
+    prices.find((item) => item.barber_id === barberId && item.service_id === serviceId)?.price ??
+    defaultPrice
+  );
+}
+
 export async function listProducts(): Promise<ProductRecord[]> {
   if (supabase) {
     const { data, error } = await supabase.from("products").select("*").order("name");
@@ -187,6 +268,35 @@ export async function saveProduct(product: ProductRecord): Promise<ProductRecord
   }
 
   return upsertLocal(storageKeys.products, productSeed, product);
+}
+
+export async function recordProductSale(
+  product: ProductRecord,
+  quantity: number,
+): Promise<ProductRecord> {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new Error("Informe uma quantidade válida para a venda.");
+  }
+
+  if (supabase) {
+    const { data, error } = await supabase.rpc("record_product_sale", {
+      p_product_id: product.id,
+      p_quantity: quantity,
+    });
+    if (error) throwRepositoryError("registrar a venda do produto", error);
+    return fromProductRow(data as ProductDatabaseRow);
+  }
+
+  if (quantity > product.stock) {
+    throw new Error("A quantidade vendida é maior que o estoque disponível.");
+  }
+
+  const updated = {
+    ...product,
+    stock: product.stock - quantity,
+    sold: product.sold + quantity,
+  };
+  return upsertLocal(storageKeys.products, productSeed, updated);
 }
 
 export async function deleteProduct(id: string) {
@@ -331,6 +441,26 @@ export async function saveEmployee(employee: EmployeeRecord): Promise<EmployeeRe
   }
 
   return upsertLocal(storageKeys.employees, employeePerf, employee);
+}
+
+export async function updateEmployeeImage(
+  employee: EmployeeRecord,
+  image: string,
+): Promise<EmployeeRecord> {
+  const updatedEmployee = { ...employee, image };
+
+  if (supabase) {
+    const result = await supabase
+      .from("barbers")
+      .update({ image: image.trim() || null })
+      .eq("id", employee.id)
+      .select("*")
+      .single();
+    if (result.error) throwRepositoryError("atualizar a foto do profissional", result.error);
+    return fromBarberRow(result.data);
+  }
+
+  return upsertLocal(storageKeys.employees, employeePerf, updatedEmployee);
 }
 
 function isMissingOptionalBarberColumn(error: {
@@ -555,7 +685,8 @@ export async function listClientAppointments(customerId: string): Promise<Appoin
       .from("appointments")
       .select("*")
       .eq("customer_id", customerId)
-      .order("starts_at", { ascending: false });
+      .order("starts_at", { ascending: false })
+      .limit(500);
     if (error) throwRepositoryError("carregar seu histórico", error);
     return (data ?? []).map(fromAppointmentRow);
   }
@@ -652,6 +783,7 @@ function fromProductRow(row: ProductDatabaseRow): ProductRecord {
     stock: row.stock,
     price: row.price,
     sold: row.sold,
+    image: row.image ?? "",
     active: row.active,
     created_at: row.created_at,
   };
@@ -664,6 +796,7 @@ function toProductRow(product: ProductRecord) {
     stock: product.stock,
     price: product.price,
     sold: product.sold,
+    image: product.image?.trim() || null,
     active: product.active ?? true,
   };
 }

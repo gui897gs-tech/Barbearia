@@ -6,7 +6,6 @@ import {
   Edit3,
   Gift,
   History,
-  Loader2,
   MessageCircle,
   MoreHorizontal,
   Plus,

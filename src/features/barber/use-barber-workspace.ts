@@ -8,11 +8,13 @@ export function useBarberWorkspace() {
     queryKey: ["barber-profile", user?.id],
     queryFn: () => getBarberByUserId(user!.id),
     enabled: Boolean(user),
+    staleTime: 5 * 60_000,
   });
   const appointmentsQuery = useQuery({
     queryKey: ["barber-appointments", profileQuery.data?.id],
     queryFn: () => listBarberAppointments(profileQuery.data!),
     enabled: Boolean(profileQuery.data),
+    staleTime: 30_000,
   });
 
   return {

@@ -54,15 +54,23 @@ function ClientProductsPage() {
             >
               <div className="relative grid min-h-44 place-items-center overflow-hidden bg-accent/35">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,color-mix(in_oklab,var(--gold)_18%,transparent),transparent_55%)]" />
-                <div className="relative grid h-24 w-24 place-items-center rounded-full border border-gold/25 bg-background/65 text-gold shadow-xl">
-                  {index === 0 ? (
-                    <Sparkles className="h-10 w-10" />
-                  ) : index === 1 ? (
-                    <Package className="h-10 w-10" />
-                  ) : (
-                    <ShoppingBag className="h-10 w-10" />
-                  )}
-                </div>
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={`Imagem de ${product.name}`}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="relative grid h-24 w-24 place-items-center rounded-full border border-gold/25 bg-background/65 text-gold shadow-xl">
+                    {index === 0 ? (
+                      <Sparkles className="h-10 w-10" />
+                    ) : index === 1 ? (
+                      <Package className="h-10 w-10" />
+                    ) : (
+                      <ShoppingBag className="h-10 w-10" />
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="p-5">

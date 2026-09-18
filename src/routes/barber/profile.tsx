@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateBarberProfile } from "@/data/repositories/business-repository";
 import { useBarberWorkspace } from "@/features/barber/use-barber-workspace";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
+import { uploadProfileImage } from "@/shared/images/profile-image";
 
 export const Route = createFileRoute("/barber/profile")({
   head: () => ({ meta: [{ title: "Perfil — King's Barber" }] }),
@@ -24,6 +25,25 @@ function BarberProfile() {
   const [bio, setBio] = useState("");
   const [specialties, setSpecialties] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
+
+  async function handleImageFile(file: File | undefined) {
+    if (!file) return;
+    setUploadingImage(true);
+    setImageError("");
+    try {
+      setImage(await uploadProfileImage(file));
+      notifySuccess("Foto enviada. Salve o perfil para concluir.");
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : "Não foi possível enviar a foto.";
+      setImageError(message);
+      notifyError(caughtError);
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   useEffect(() => {
     if (error) notifyError(error);
@@ -154,14 +174,27 @@ function BarberProfile() {
                   placeholder="(11) 99999-9999"
                 />
               </Field>
-              <Field label="URL da foto" htmlFor="barber-image">
-                <Input
-                  id="barber-image"
-                  type="url"
-                  value={image}
-                  onChange={(event) => setImage(event.target.value)}
-                  placeholder="https://..."
-                />
+              <Field label="Foto de perfil" htmlFor="barber-image">
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm hover:border-gold/50">
+                  {uploadingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4 text-gold" />
+                  )}
+                  {uploadingImage ? "Enviando foto..." : "Escolher foto do celular"}
+                  <input
+                    id="barber-image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    className="sr-only"
+                    disabled={uploadingImage}
+                    onChange={(event) => {
+                      void handleImageFile(event.target.files?.[0]);
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+                {imageError && <p className="mt-2 text-xs text-destructive">{imageError}</p>}
               </Field>
               <Field
                 label="Especialidades"
@@ -196,7 +229,9 @@ function BarberProfile() {
             <div className="mt-7 flex justify-end border-t border-border pt-5">
               <Button
                 type="submit"
-                disabled={saving || name.trim().length < 3 || title.trim().length < 2}
+                disabled={
+                  saving || uploadingImage || name.trim().length < 3 || title.trim().length < 2
+                }
               >
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

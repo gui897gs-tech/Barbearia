@@ -7,10 +7,13 @@ import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { formatCurrency } from "@/shared/utils/format";
 import {
   bookClientAppointment,
+  BarberServicePrice,
   EmployeeRecord,
   getAvailableSlots,
+  listBarberServicePrices,
   listEmployees,
   listServices,
+  resolveBarberServicePrice,
   ServiceRecord,
 } from "@/data/repositories/business-repository";
 import { useAuth } from "@/features/auth/auth-context";
@@ -33,6 +36,7 @@ function BookFlow() {
   const [step, setStep] = useState(0);
   const [barbers, setBarbers] = useState<EmployeeRecord[]>([]);
   const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [barberPrices, setBarberPrices] = useState<BarberServicePrice[]>([]);
   const [barber, setBarber] = useState<EmployeeRecord | null>(null);
   const [service, setService] = useState<ServiceRecord | null>(null);
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -49,8 +53,8 @@ function BookFlow() {
     setLoadingOptions(true);
     setOptionsError("");
 
-    void Promise.all([listEmployees(), listServices()])
-      .then(([employeeRows, serviceRows]) => {
+    void Promise.all([listEmployees(), listServices(), listBarberServicePrices()])
+      .then(([employeeRows, serviceRows, priceRows]) => {
         if (!active) return;
         const activeBarbers = employeeRows
           .filter((employee) => employee.active !== false)
@@ -58,6 +62,7 @@ function BookFlow() {
         const activeServices = serviceRows.filter((item) => item.active !== false);
         setBarbers(activeBarbers);
         setServices(activeServices);
+        setBarberPrices(priceRows);
         setBarber(activeBarbers[0] ?? null);
         setService(activeServices[0] ?? null);
       })
@@ -65,6 +70,7 @@ function BookFlow() {
         if (!active) return;
         setBarbers([]);
         setServices([]);
+        setBarberPrices([]);
         setBarber(null);
         setService(null);
         setOptionsError(getOptionsErrorMessage(error));
@@ -111,6 +117,11 @@ function BookFlow() {
     (step === 3 && Boolean(time)) ||
     step === 4;
 
+  const selectedPrice =
+    barber && service
+      ? resolveBarberServicePrice(barberPrices, barber.id, service.id, service.price)
+      : (service?.price ?? 0);
+
   const next = () => {
     if (canContinue) setStep((current) => Math.min(current + 1, 4));
   };
@@ -122,7 +133,7 @@ function BookFlow() {
     try {
       await bookClientAppointment({
         barber,
-        service,
+        service: { ...service, price: selectedPrice },
         date,
         time,
         customerId: user.id,
@@ -243,7 +254,16 @@ function BookFlow() {
                         <div className="mt-2 font-display text-lg">{item.name}</div>
                         <div className="mt-4 flex items-end justify-between">
                           <div className="font-display text-2xl text-gradient-gold">
-                            {formatCurrency(item.price)}
+                            {formatCurrency(
+                              barber
+                                ? resolveBarberServicePrice(
+                                    barberPrices,
+                                    barber.id,
+                                    item.id,
+                                    item.price,
+                                  )
+                                : item.price,
+                            )}
                           </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" /> {item.duration} min
@@ -346,7 +366,7 @@ function BookFlow() {
                     <div className="flex items-end justify-between border-t border-border pt-4">
                       <span className="text-sm text-muted-foreground">Total</span>
                       <span className="font-display text-3xl text-gradient-gold">
-                        {formatCurrency(service.price)}
+                        {formatCurrency(selectedPrice)}
                       </span>
                     </div>
                   </div>

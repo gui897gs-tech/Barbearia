@@ -61,7 +61,6 @@ function OwnerDashboard() {
     window.addEventListener("focus", refreshWhenVisible);
     document.addEventListener("visibilitychange", refreshWhenVisible);
 
-    const interval = window.setInterval(() => void refreshDashboard(), 10_000);
     const channel = supabase
       ?.channel("owner-dashboard-appointments")
       .on(
@@ -72,7 +71,6 @@ function OwnerDashboard() {
       .subscribe();
 
     return () => {
-      window.clearInterval(interval);
       window.removeEventListener("focus", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       if (channel && supabase) void supabase.removeChannel(channel);

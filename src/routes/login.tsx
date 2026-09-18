@@ -5,6 +5,7 @@ import { getRoleHome, getUserRole, useAuth } from "@/features/auth/auth-context"
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
 import kingsBarberLogo from "@/assets/kings-barber-logo.png";
 import { ThemeToggle } from "@/features/theme/theme-toggle";
+import { isStrongPassword, minimumPasswordLength } from "@/shared/domain/password";
 
 type Mode = "login" | "signup";
 
@@ -66,8 +67,8 @@ function LoginPage() {
         setError("Este convite é inválido ou expirou. Solicite um novo convite ao proprietário.");
         return;
       }
-      if (password.length < 8) {
-        setError("Use uma senha com pelo menos 8 caracteres.");
+      if (!isStrongPassword(password)) {
+        setError("Use 12 caracteres com maiuscula, minuscula, numero e simbolo.");
         return;
       }
       if (password !== confirmPassword) {
@@ -103,8 +104,8 @@ function LoginPage() {
         return;
       }
 
-      if (password.length < 8) {
-        setError("Use uma senha com pelo menos 8 caracteres.");
+      if (!isStrongPassword(password)) {
+        setError("Use 12 caracteres com maiuscula, minuscula, numero e simbolo.");
         return;
       }
 
@@ -388,14 +389,14 @@ function LoginPage() {
                   isPasswordSetup || mode === "signup" ? "new-password" : "current-password"
                 }
                 required
-                minLength={isPasswordSetup || mode === "signup" ? 8 : 6}
+                minLength={isPasswordSetup || mode === "signup" ? minimumPasswordLength : 6}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
               />
               {(isPasswordSetup || mode === "signup") && (
                 <div className="mt-1 text-[11px] text-muted-foreground">
-                  Use pelo menos 8 caracteres.
+                  Use 12 caracteres com maiuscula, minuscula, numero e simbolo.
                 </div>
               )}
             </div>
@@ -421,7 +422,7 @@ function LoginPage() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  minLength={8}
+                  minLength={minimumPasswordLength}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
@@ -530,10 +531,10 @@ function getAuthMessage(message: string) {
   }
 
   if (normalized.includes("email")) {
-    return `O Supabase recusou este e-mail: ${message}`;
+    return "O Supabase recusou este e-mail. Confira o endereço e tente novamente.";
   }
 
-  return message || "Não foi possível concluir a operação. Tente novamente.";
+  return "Não foi possível concluir a operação. Tente novamente.";
 }
 
 async function createClientAccount({

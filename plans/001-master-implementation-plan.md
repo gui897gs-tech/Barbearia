@@ -1,6 +1,6 @@
 # Plano mestre — King's Barber
 
-Status: implementação local concluída; homologação Supabase externa pendente
+Status: MVP e backend homologados; publicação e operação contínua em andamento
 Início: 22 de julho de 2026
 Objetivo: corrigir o produto existente, concluir todos os fluxos dos três perfis e transformar a interface em uma experiência autoral, responsiva, acessível e pronta para produção.
 
@@ -146,8 +146,8 @@ Toda nova dependência deve justificar manutenção, tamanho e ganho de acessibi
 
 - [x] `npm run check` e suíte de testes locais sem falhas.
 - [x] `npm audit` e `npm audit --omit=dev` sem vulnerabilidades após a migração para Nitro/Vercel.
-- [ ] Migrações aplicadas e políticas RLS testadas por papel em um projeto Supabase.
+- [x] Migrações aplicadas e políticas RLS testadas por papel em um projeto Supabase.
 - [x] Screenshots desktop/mobile dos três ambientes nos temas claro e escuro com dados interceptados determinísticos.
-- [ ] Jornada de agendamento real concluída e verificada no banco remoto, inclusive concorrência.
+- [x] Jornada de agendamento real concluída e verificada no banco remoto, inclusive concorrência.
 - [x] Todos os controles interativos revisados com ação, estado desabilitado explicativo ou remoção.
 - [x] Auditoria final comparando cada requisito deste plano ao estado do produto.

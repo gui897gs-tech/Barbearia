@@ -1,6 +1,6 @@
 # King's Barber Management
 
-Aplicação web para gestão de barbearia, com áreas separadas para proprietário, barbeiros e clientes. O projeto usa TanStack Start, React, TypeScript, Tailwind CSS, Supabase e Nitro, com deploy preparado para Vercel.
+Aplicação web para gestão de barbearia, com áreas separadas para proprietário, barbeiros e clientes. Inclui preço padrão por serviço e valores opcionais por barbeiro, calculados e protegidos no banco durante o agendamento. O projeto usa TanStack Start, React, TypeScript, Tailwind CSS, Supabase e Nitro, com deploy preparado para Vercel.
 
 ## Requisitos
 
@@ -25,6 +25,7 @@ Sem as variáveis do Supabase, a tela pública informa a configuração ausente 
 - `npm run typecheck`: validação TypeScript.
 - `npm run lint`: análise estática.
 - `npm run test`: testes unitários de regras de negócio.
+- `npm run test:supabase`: homologação destrutiva e autocontida em um projeto Supabase de teste; exige as variáveis `REAL_SUPABASE_*` e remove os registros temporários ao terminar.
 - `npm run test:e2e`: testes E2E em desktop e mobile com Playwright; usa um Supabase interceptado e determinístico, sem tocar no projeto real.
 - `npm run build`: build SSR de produção com Nitro para Vercel.
 - `npm run check`: executa typecheck, lint, testes unitários e build.
@@ -52,7 +53,7 @@ plans/             plano mestre e acompanhamento da implementação
 tests/e2e/         verificações de runtime e responsividade
 ```
 
-Os E2E autenticados validam os contratos esperados do Supabase, as mutações e a regressão visual nos dois temas. Eles não validam RLS ou migrações no PostgreSQL; siga a homologação real descrita em [docs/supabase/setup.md](docs/supabase/setup.md).
+Os E2E autenticados validam os contratos esperados do Supabase, as mutações e a regressão visual nos dois temas. A validação real de RLS, Edge Functions, concorrência e triggers fica no comando `test:supabase`; siga o preparo descrito em [docs/supabase/setup.md](docs/supabase/setup.md).
 
 ## Autorização
 
@@ -68,7 +69,7 @@ A interface usa temas claro/escuro/sistema, fontes variáveis auto-hospedadas e 
 
 O adaptador Nitro gera o SSR e as funções compatíveis com Vercel. O arquivo `vercel.json` fixa a detecção do framework como TanStack Start; a publicação pode ser feita com `vercel --prod` depois de configurar as variáveis públicas do Supabase no projeto.
 
-- Produção: [kings-barber-management.vercel.app](https://kings-barber-management.vercel.app)
+- Produção: [kings-barber-management-eight.vercel.app](https://kings-barber-management-eight.vercel.app)
 - Entrega no GitHub: [PR #1](https://github.com/gui897gs-tech/Barbearia/pull/1)
 
 O deployment atual foi publicado pela CLI. Para disparar novos deploys automaticamente por `push`, ainda é necessário conceder ao GitHub App da Vercel acesso ao repositório `gui897gs-tech/Barbearia` e conectá-lo ao projeto `kings-barber-management`.

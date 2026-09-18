@@ -4,7 +4,6 @@ import { ptBR } from "date-fns/locale";
 import { ArrowRight, Calendar, Loader2, Sparkles, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
-import { formatCurrency } from "@/shared/utils/format";
 import {
   AppointmentRecord,
   cancelClientAppointment,
@@ -198,10 +197,7 @@ function ClientDashboard() {
                     {service.category}
                   </div>
                   <h3 className="mt-2 font-display text-xl">{service.name}</h3>
-                  <div className="mt-5 flex items-end justify-between">
-                    <div className="font-display text-2xl text-gradient-gold">
-                      {formatCurrency(service.price)}
-                    </div>
+                  <div className="mt-5 flex items-end justify-end">
                     <div className="text-xs text-muted-foreground">{service.duration} min</div>
                   </div>
                 </Link>
@@ -227,7 +223,7 @@ function ClientDashboard() {
                           {formatAppointment(appointment)}
                         </div>
                       </div>
-                      <div className="text-sm text-gold">{formatCurrency(appointment.price)}</div>
+                      <div className="text-xs font-medium text-gold">{appointment.status}</div>
                     </div>
                   ))}
                 </div>

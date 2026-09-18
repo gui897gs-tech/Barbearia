@@ -8,6 +8,7 @@ import {
   getAuthCallbackContext,
   supabase,
 } from "@/integrations/supabase/client";
+import { isStrongPassword, minimumPasswordLength } from "@/shared/domain/password";
 
 export const Route = createFileRoute("/set-password")({
   head: () => ({ meta: [{ title: "Definir senha — King's Barber" }] }),
@@ -46,8 +47,8 @@ function SetPasswordPage() {
       );
       return;
     }
-    if (password.length < 8) {
-      setError("Use uma senha com pelo menos 8 caracteres.");
+    if (!isStrongPassword(password)) {
+      setError("Use 12 caracteres com maiuscula, minuscula, numero e simbolo.");
       return;
     }
     if (password !== confirmation) {
@@ -105,7 +106,7 @@ function SetPasswordPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={minimumPasswordLength}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="mt-1 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm focus:border-[color:var(--gold)] focus:outline-none"
@@ -121,7 +122,7 @@ function SetPasswordPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={minimumPasswordLength}
                 value={confirmation}
                 onChange={(event) => setConfirmation(event.target.value)}
                 className="mt-1 w-full rounded-xl border border-border bg-card px-4 py-3 text-sm focus:border-[color:var(--gold)] focus:outline-none"

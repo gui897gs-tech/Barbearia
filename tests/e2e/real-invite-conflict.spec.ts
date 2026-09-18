@@ -22,7 +22,8 @@ test("barber invite never changes the password or role of an active owner sessio
   });
   const suffix = crypto.randomUUID();
   const ownerEmail = `owner-conflict-${suffix}@example.com`;
-  const barberEmail = `barber-conflict-${suffix}@example.com`;
+  // Supabase validates MX records for invitation emails.
+  const barberEmail = `barber-conflict-${suffix}@gmail.com`;
   const ownerPassword = `Owner-${crypto.randomUUID()}!`;
   const barberPassword = `Barber-${crypto.randomUUID()}!`;
   let ownerId: string | undefined;

@@ -8,6 +8,7 @@ import {
   listAppointments,
   listEmployees,
   saveEmployee,
+  updateEmployeeImage,
 } from "@/data/repositories/business-repository";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 import { formatCurrency, isCompletedStatus } from "@/shared/utils/format";
+import { uploadProfileImage } from "@/shared/images/profile-image";
 
 type Employee = EmployeeRecord;
 const defaultImage = "";
@@ -351,6 +353,7 @@ function EmployeeProfileDialog({
   const performance = getPerformance(employee, appointments);
   const [image, setImage] = useState(employee.image || "");
   const [savingImage, setSavingImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [imageError, setImageError] = useState("");
   const [imageMessage, setImageMessage] = useState("");
 
@@ -359,20 +362,18 @@ function EmployeeProfileDialog({
     setImageError("");
     setImageMessage("");
 
-    if (!file.type.startsWith("image/")) {
-      setImageError("Escolha uma foto JPG, JPEG, PNG ou WEBP.");
-      return;
-    }
-    if (file.size > 20 * 1024 * 1024) {
-      setImageError("A foto deve ter no máximo 20 MB.");
-      return;
-    }
-
+    setUploadingImage(true);
     try {
-      setImage(await resizeProfileImage(file));
+      setImage(await uploadProfileImage(file, `team-${employee.id}`));
       setImageMessage("Foto pronta. Clique em “Salvar foto” para concluir.");
-    } catch {
-      setImageError("Não foi possível processar essa imagem. Tente outro arquivo.");
+    } catch (error) {
+      setImageError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível processar essa imagem. Tente outro arquivo.",
+      );
+    } finally {
+      setUploadingImage(false);
     }
   }
 
@@ -380,7 +381,7 @@ function EmployeeProfileDialog({
     setSavingImage(true);
     setImageError("");
     try {
-      const saved = await saveEmployee({ ...employee, image: image.trim() });
+      const saved = await updateEmployeeImage(employee, image.trim());
       onSaved(saved);
       setImageMessage("");
       notifySuccess("Foto do profissional atualizada.");
@@ -426,11 +427,12 @@ function EmployeeProfileDialog({
                 Alterar foto
               </div>
               <label className="mt-3 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[color:var(--gold)]/40 px-3 py-2.5 text-xs text-muted-foreground transition hover:border-[color:var(--gold)] hover:text-foreground">
-                Escolher imagem
+                {uploadingImage ? "Processando..." : "Escolher imagem"}
                 <input
                   type="file"
-                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  accept=".jpg,.jpeg,.jfif,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
                   className="sr-only"
+                  disabled={uploadingImage}
                   onChange={(event) => {
                     void handleImageFile(event.target.files?.[0]);
                     event.currentTarget.value = "";
@@ -471,7 +473,9 @@ function EmployeeProfileDialog({
                 </button>
                 <button
                   type="button"
-                  disabled={savingImage || image === employee.image || Boolean(imageError)}
+                  disabled={
+                    savingImage || uploadingImage || image === employee.image || Boolean(imageError)
+                  }
                   onClick={handleSaveImage}
                   className="rounded-xl gradient-gold px-3 py-2 text-xs font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -530,37 +534,6 @@ function EmployeeProfileDialog({
       </div>
     </div>
   );
-}
-
-function resizeProfileImage(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const source = new Image();
-    const objectUrl = URL.createObjectURL(file);
-
-    source.onload = () => {
-      const maxSize = 480;
-      const sourceSize = Math.min(source.width, source.height);
-      const sourceX = Math.max(0, (source.width - sourceSize) / 2);
-      const sourceY = Math.max(0, (source.height - sourceSize) / 2);
-      const canvas = document.createElement("canvas");
-      canvas.width = maxSize;
-      canvas.height = maxSize;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        URL.revokeObjectURL(objectUrl);
-        reject(new Error("Canvas indisponível."));
-        return;
-      }
-      context.drawImage(source, sourceX, sourceY, sourceSize, sourceSize, 0, 0, maxSize, maxSize);
-      URL.revokeObjectURL(objectUrl);
-      resolve(canvas.toDataURL("image/jpeg", 0.72));
-    };
-    source.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error("Imagem inválida."));
-    };
-    source.src = objectUrl;
-  });
 }
 
 function getPerformance(employee: Employee, appointments: AppointmentRecord[]) {

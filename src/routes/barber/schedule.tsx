@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { addDays, format, isSameDay, parseISO, startOfWeek } from "date-fns";
+import { addDays, format, isSameDay, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   CalendarDays,

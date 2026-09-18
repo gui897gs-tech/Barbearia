@@ -94,6 +94,23 @@ export function AppShell({
     .slice(0, 2)
     .join("")
     .toUpperCase();
+  const profileImage = String(user?.user_metadata?.avatar_url || "");
+
+  function ProfileAvatar({ className }: { className: string }) {
+    return profileImage ? (
+      <img
+        src={profileImage}
+        alt={`Foto de ${displayName}`}
+        className={`${className} object-cover`}
+      />
+    ) : (
+      <div
+        className={`${className} grid place-items-center gradient-gold font-semibold text-primary-foreground`}
+      >
+        {initials}
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (initialized && !user && pathname.startsWith(`/${role}`)) {
@@ -180,9 +197,7 @@ export function AppShell({
 
           <div className="mt-auto rounded-xl border border-sidebar-border bg-sidebar-accent/55 p-3.5">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-full gradient-gold font-semibold text-primary-foreground">
-                {initials}
-              </div>
+              <ProfileAvatar className="h-10 w-10 rounded-full" />
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-sidebar-foreground">
                   {displayName}
@@ -236,12 +251,7 @@ export function AppShell({
             >
               <LogOut className="h-3.5 w-3.5" />
             </button>
-            <div
-              className="grid h-9 w-9 place-items-center rounded-full gradient-gold text-sm font-semibold text-primary-foreground"
-              aria-label={displayName}
-            >
-              {initials}
-            </div>
+            <ProfileAvatar className="h-9 w-9 rounded-full text-sm" />
           </div>
         </header>
         <main className="flex-1 px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-10 xl:px-12">

@@ -8,12 +8,14 @@ export async function requireClientRole(role: AppRole, pathname: string) {
     throw redirect({ to: "/login", search: { redirect: pathname } });
   }
 
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) {
+  // Route guards are a client-side UX layer. Reading the persisted session avoids
+  // a network round-trip on every navigation; PostgreSQL RLS remains authoritative.
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session?.user) {
     throw redirect({ to: "/login", search: { redirect: pathname } });
   }
 
-  const userRole = getUserRole(data.user);
+  const userRole = getUserRole(data.session.user);
   if (userRole !== role) {
     throw redirect({ to: getRoleHome(userRole) });
   }

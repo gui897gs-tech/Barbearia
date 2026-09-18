@@ -13,7 +13,18 @@ captureAuthCallback();
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const isBrowser = typeof window !== "undefined";
+
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: isBrowser,
+        detectSessionInUrl: isBrowser,
+        persistSession: isBrowser,
+        storage: isBrowser ? window.sessionStorage : undefined,
+      },
+    })
+  : null;
 
 export function getAuthCallbackContext(): AuthCallbackContext | null {
   if (typeof window === "undefined") return null;

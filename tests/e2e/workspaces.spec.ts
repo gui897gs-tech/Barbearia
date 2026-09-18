@@ -26,6 +26,12 @@ test("owner workspace loads, persists settings and remains responsive", async ({
   await expect(page.getByText("Configurações atualizadas.")).toBeVisible();
   await expectNoHorizontalOverflow(page);
 
+  await page.goto("/owner/services");
+  await expect(page.getByRole("heading", { name: /preço por barbeiro/i })).toBeVisible();
+  await page.getByLabel(/Corte Signature com Miguel Reis/i).fill("92");
+  await page.getByRole("button", { name: /salvar preços/i }).click();
+  await expect(page.getByText(/preços por barbeiro atualizados/i)).toBeVisible();
+
   await page.goto("/owner/reports");
   await expect(page.getByRole("heading", { name: "Relatórios" })).toBeVisible();
   await expect(page.getByText("Atendimentos concluídos", { exact: true })).toBeVisible();
@@ -55,12 +61,14 @@ test("client completes the booking flow and sees the resulting history", async (
 
   await expect(page.getByRole("heading", { name: "Seu próximo corte começa aqui." })).toBeVisible();
   await expect(page.getByText("Corte Signature com Miguel Reis")).toBeVisible();
+  await expect(page.getByText(/R\$\s*\d/)).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
   await captureBothThemes(page, testInfo, "client-workspace");
 
   await page.goto("/client/book");
   await expect(page.getByRole("heading", { name: "Agende seu horário" })).toBeVisible();
   await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page.getByText("R$ 89")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Selecione um serviço" })).toBeVisible();
   await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByRole("heading", { name: "Escolha uma data" })).toBeVisible();
