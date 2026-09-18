@@ -20,6 +20,40 @@ alter table public.appointments
   alter column starts_at set not null;
 
 alter table public.appointments
+  add column if not exists booking_window tstzrange;
+
+update public.appointments
+set booking_window = tstzrange(
+  starts_at,
+  starts_at + duration_minutes * interval '1 minute',
+  '[)'
+)
+where booking_window is null;
+
+alter table public.appointments
+  alter column booking_window set not null;
+
+create or replace function public.sync_appointment_booking_window()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.booking_window := tstzrange(
+    new.starts_at,
+    new.starts_at + new.duration_minutes * interval '1 minute',
+    '[)'
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_appointment_booking_window on public.appointments;
+create trigger sync_appointment_booking_window
+before insert or update of starts_at, duration_minutes on public.appointments
+for each row execute function public.sync_appointment_booking_window();
+
+alter table public.appointments
   drop constraint if exists appointments_duration_minutes_check;
 alter table public.appointments
   add constraint appointments_duration_minutes_check
@@ -31,11 +65,7 @@ alter table public.appointments
   add constraint appointments_no_barber_overlap
   exclude using gist (
     barber_id with =,
-    tstzrange(
-      starts_at,
-      starts_at + make_interval(mins => duration_minutes),
-      '[)'
-    ) with &&
+    booking_window with &&
   )
   where (barber_id is not null and status not in ('Cancelado', 'Cancelado pelo cliente'));
 

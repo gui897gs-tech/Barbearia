@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Building2, Clock3, Loader2, Save, ShieldCheck } from "lucide-react";
+import { Building2, Camera, Clock3, Loader2, Save, ShieldCheck } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import {
   saveBusinessSettings,
 } from "@/data/repositories/business-repository";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
+import { useAuth } from "@/features/auth/auth-context";
+import { uploadProfileImage } from "@/shared/images/profile-image";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/owner/settings")({
   head: () => ({ meta: [{ title: "Configurações — King's Barber" }] }),
@@ -19,9 +22,30 @@ export const Route = createFileRoute("/owner/settings")({
 });
 
 function OwnerSettings() {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<BusinessSettingsRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [ownerImage, setOwnerImage] = useState(() => String(user?.user_metadata?.avatar_url || ""));
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  async function handleOwnerImage(file: File | undefined) {
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const imageUrl = await uploadProfileImage(file);
+      if (supabase) {
+        const { error } = await supabase.auth.updateUser({ data: { avatar_url: imageUrl } });
+        if (error) throw error;
+      }
+      setOwnerImage(imageUrl);
+      notifySuccess("Foto do proprietário atualizada.");
+    } catch (error) {
+      notifyError(error);
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   useEffect(() => {
     void getBusinessSettings()
@@ -73,6 +97,51 @@ function OwnerSettings() {
         </div>
       ) : settings ? (
         <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+          <section className="glass-card rounded-2xl p-5 sm:p-7 xl:col-span-2">
+            <SectionHeading
+              icon={Camera}
+              title="Perfil do proprietário"
+              description="Esta foto aparece no menu da sua conta."
+            />
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              {ownerImage ? (
+                <img
+                  src={ownerImage}
+                  alt="Foto do proprietário"
+                  className="h-28 w-28 rounded-full border border-gold/40 object-cover p-1"
+                />
+              ) : (
+                <div className="grid h-28 w-28 place-items-center rounded-full border border-gold/40 bg-muted font-display text-3xl text-gold">
+                  {String(user?.user_metadata?.full_name || user?.email || "D")
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+              )}
+              <div>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gold/40 px-4 py-3 text-sm text-gold hover:bg-gold/10">
+                  {uploadingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                  {uploadingImage ? "Enviando foto..." : "Escolher foto do celular"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    className="sr-only"
+                    disabled={uploadingImage}
+                    onChange={(event) => {
+                      void handleOwnerImage(event.target.files?.[0]);
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  JPG, PNG, WEBP ou foto da galeria, até 20 MB.
+                </p>
+              </div>
+            </div>
+          </section>
           <section className="glass-card rounded-2xl p-5 sm:p-7">
             <SectionHeading
               icon={Building2}

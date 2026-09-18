@@ -43,6 +43,7 @@ function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const dateKey = formatDateKey(selectedDate);
+  const brazilianDate = new Intl.DateTimeFormat("pt-BR").format(selectedDate);
 
   useEffect(() => {
     setLoading(true);
@@ -135,13 +136,20 @@ function AppointmentsPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <label className="relative">
+            <label className="relative min-w-44 cursor-pointer">
               <span className="sr-only">Data da agenda</span>
+              <span
+                aria-hidden="true"
+                className="profile-input flex items-center justify-between gap-4 text-center font-display"
+              >
+                <span className="flex-1">{brazilianDate}</span>
+                <CalendarDays className="h-4 w-4 shrink-0" />
+              </span>
               <input
                 type="date"
                 value={dateKey}
                 onChange={(event) => setSelectedDate(new Date(`${event.target.value}T12:00:00`))}
-                className="profile-input min-w-44 text-center font-display"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               />
             </label>
             <Button
@@ -159,7 +167,7 @@ function AppointmentsPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Cliente, serviço ou barbeiro"
-              className="profile-input pl-9"
+              className="profile-input profile-input-with-icon"
             />
           </div>
         </div>

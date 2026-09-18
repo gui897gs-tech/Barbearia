@@ -4,7 +4,6 @@ import { ptBR } from "date-fns/locale";
 import { ArrowRight, Calendar, Loader2, Sparkles, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
-import { formatCurrency } from "@/shared/utils/format";
 import {
   AppointmentRecord,
   cancelClientAppointment,
@@ -64,7 +63,6 @@ function ClientDashboard() {
   const completed = appointments.filter(
     (appointment) => appointment.status === "Concluído" || appointment.status === "Concluido",
   );
-  const totalSpent = completed.reduce((sum, appointment) => sum + appointment.price, 0);
   const firstName = String(user?.user_metadata?.full_name || "Cliente").split(" ")[0];
 
   async function handleCancel() {
@@ -199,10 +197,7 @@ function ClientDashboard() {
                     {service.category}
                   </div>
                   <h3 className="mt-2 font-display text-xl">{service.name}</h3>
-                  <div className="mt-5 flex items-end justify-between">
-                    <div className="font-display text-2xl text-gradient-gold">
-                      {formatCurrency(service.price)}
-                    </div>
+                  <div className="mt-5 flex items-end justify-end">
                     <div className="text-xs text-muted-foreground">{service.duration} min</div>
                   </div>
                 </Link>
@@ -228,7 +223,7 @@ function ClientDashboard() {
                           {formatAppointment(appointment)}
                         </div>
                       </div>
-                      <div className="text-sm text-gold">{formatCurrency(appointment.price)}</div>
+                      <div className="text-xs font-medium text-gold">{appointment.status}</div>
                     </div>
                   ))}
                 </div>
@@ -241,9 +236,8 @@ function ClientDashboard() {
               <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold">
                 Seu histórico
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-4">
+              <div className="mt-5">
                 <Metric label="Visitas concluídas" value={String(completed.length)} />
-                <Metric label="Total investido" value={formatCurrency(totalSpent)} />
               </div>
               <Link
                 to="/client/history"

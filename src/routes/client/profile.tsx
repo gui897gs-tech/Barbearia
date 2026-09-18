@@ -16,6 +16,7 @@ function ClientProfilePage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [birthDateDisplay, setBirthDateDisplay] = useState("");
   const [saving, setSaving] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -23,7 +24,9 @@ function ClientProfilePage() {
     if (!user) return;
     setFullName(String(user.user_metadata?.full_name ?? ""));
     setPhone(String(user.user_metadata?.phone ?? ""));
-    setBirthDate(String(user.user_metadata?.birth_date ?? ""));
+    const metadataBirthDate = String(user.user_metadata?.birth_date ?? "");
+    setBirthDate(metadataBirthDate);
+    setBirthDateDisplay(formatBirthDate(metadataBirthDate));
     if (!supabase) {
       setLoadingProfile(false);
       return;
@@ -39,7 +42,9 @@ function ClientProfilePage() {
         if (data) {
           setFullName(data.name || "");
           setPhone(data.whatsapp || "");
-          setBirthDate(data.birth_date || "");
+          const profileBirthDate = data.birth_date || "";
+          setBirthDate(profileBirthDate);
+          setBirthDateDisplay(formatBirthDate(profileBirthDate));
         }
       } finally {
         setLoadingProfile(false);
@@ -55,6 +60,10 @@ function ClientProfilePage() {
     }
     if (phone.replace(/\D/g, "").length < 10) {
       notifyError(new Error("Informe um telefone válido com DDD."));
+      return;
+    }
+    if (birthDateDisplay && !birthDate) {
+      notifyError(new Error("Informe a data de nascimento no formato DD/MM/AAAA."));
       return;
     }
     setSaving(true);
@@ -150,9 +159,16 @@ function ClientProfilePage() {
             </Field>
             <Field label="Data de nascimento">
               <input
-                type="date"
-                value={birthDate}
-                onChange={(event) => setBirthDate(event.target.value)}
+                type="text"
+                inputMode="numeric"
+                placeholder="DD/MM/AAAA"
+                maxLength={10}
+                value={birthDateDisplay}
+                onChange={(event) => {
+                  const displayValue = maskBirthDate(event.target.value);
+                  setBirthDateDisplay(displayValue);
+                  setBirthDate(parseBirthDate(displayValue));
+                }}
                 className="profile-input"
               />
             </Field>
@@ -180,4 +196,31 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </label>
   );
+}
+
+function maskBirthDate(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function parseBirthDate(value: string) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (!match) return "";
+  const [, day, month, year] = match;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (
+    date.getUTCFullYear() !== Number(year) ||
+    date.getUTCMonth() !== Number(month) - 1 ||
+    date.getUTCDate() !== Number(day)
+  ) {
+    return "";
+  }
+  return `${year}-${month}-${day}`;
+}
+
+function formatBirthDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
 }

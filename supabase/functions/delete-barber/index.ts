@@ -4,18 +4,26 @@ import { z } from "npm:zod@3.24.2";
 const deleteSchema = z.object({ barberId: z.string().min(1).max(100) });
 
 Deno.serve(async (request) => {
-  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "";
+  const allowedOrigins = (Deno.env.get("ALLOWED_ORIGIN") || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   const requestOrigin = request.headers.get("Origin") || "";
+  const originAllowed = allowedOrigins.length > 0 && allowedOrigins.includes(requestOrigin);
   const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin,
+    "Access-Control-Allow-Origin": originAllowed ? requestOrigin : allowedOrigins[0] || "",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
   };
 
-  if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (request.method === "OPTIONS") {
+    return originAllowed
+      ? new Response("ok", { headers: corsHeaders })
+      : json({ error: "Origin not allowed." }, 403, corsHeaders);
+  }
   if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, corsHeaders);
-  if (allowedOrigin && requestOrigin !== allowedOrigin) {
+  if (!originAllowed) {
     return json({ error: "Origin not allowed." }, 403, corsHeaders);
   }
 
@@ -44,7 +52,9 @@ Deno.serve(async (request) => {
     }
     const { barberId } = parsedBody.data;
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
     const { data: barber, error: lookupError } = await adminClient
       .from("barbers")
       .select("access_user_id")
@@ -70,7 +80,13 @@ Deno.serve(async (request) => {
     }
 
     return json({ success: true }, 200, corsHeaders);
-  } catch {
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "delete_barber_failed",
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      }),
+    );
     return json({ error: "Unexpected error." }, 500, corsHeaders);
   }
 });
@@ -78,6 +94,11 @@ Deno.serve(async (request) => {
 function json(body: unknown, status: number, corsHeaders: Record<string, string>) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    },
   });
 }

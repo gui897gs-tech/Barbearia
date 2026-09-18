@@ -38,8 +38,9 @@ const barbers = [
     image: avatar("MR"),
     revenue: 0,
     appts: 0,
-    commission: 30,
-    commission_rate: 30,
+    commission: 0,
+    commission_rate: 0,
+    fixed_fee: 500,
     email: "miguel@kingsbarber.test",
     access_status: "active",
     access_user_id: "barber-user",
@@ -57,8 +58,9 @@ const barbers = [
     image: avatar("RT"),
     revenue: 0,
     appts: 0,
-    commission: 28,
-    commission_rate: 28,
+    commission: 0,
+    commission_rate: 0,
+    fixed_fee: 500,
     email: "rafael@kingsbarber.test",
     access_status: "active",
     access_user_id: "barber-second-user",
@@ -70,22 +72,36 @@ const barbers = [
   },
 ];
 
+const barberServicePriceSeed = [
+  { barber_id: "barber-profile", service_id: "service-cut", price: 89 },
+  { barber_id: "barber-second", service_id: "service-cut", price: 99 },
+];
+
 const products = [
   {
-    id: "product-pomade",
-    name: "Pomada Matte",
-    stock: 14,
-    price: 69,
+    id: "p1",
+    name: "Pomada Modeladora",
+    stock: 24,
+    price: 45,
     sold: 18,
     active: true,
     created_at: `${today}T08:00:00-03:00`,
   },
   {
-    id: "product-oil",
-    name: "Óleo de Barba",
-    stock: 7,
-    price: 59,
+    id: "p2",
+    name: "Gel de Cabelo",
+    stock: 18,
+    price: 28,
     sold: 11,
+    active: true,
+    created_at: `${today}T08:00:00-03:00`,
+  },
+  {
+    id: "p3",
+    name: "Laquê",
+    stock: 12,
+    price: 35,
+    sold: 7,
     active: true,
     created_at: `${today}T08:00:00-03:00`,
   },
@@ -147,10 +163,11 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
   const user = createUser(role);
   const session = createSession(user);
   const appointments = createAppointments();
+  const barberServicePrices = barberServicePriceSeed.map((item) => ({ ...item }));
 
   await page.addInitScript(
     ({ key, value }) => {
-      window.localStorage.setItem(key, JSON.stringify(value));
+      window.sessionStorage.setItem(key, JSON.stringify(value));
       window.localStorage.setItem("kings-barber-theme", "light");
     },
     { key: storageKey, value: session },
@@ -181,6 +198,12 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
 
     if (pathname === "/rest/v1/rpc/book_appointment") {
       const input = postData(request.postData());
+      const selectedService =
+        services.find((item) => item.id === input.p_service_id) ?? services[0];
+      const selectedPrice =
+        barberServicePrices.find(
+          (item) => item.barber_id === input.p_barber_id && item.service_id === input.p_service_id,
+        )?.price ?? selectedService.price;
       appointments.push({
         id: "appointment-new",
         time: String(input.p_time ?? "09:00").slice(0, 5),
@@ -188,7 +211,7 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
         service_name: "Corte Signature",
         barber_name: "Miguel Reis",
         status: "Confirmado",
-        price: 75,
+        price: selectedPrice,
         appointment_date: String(input.p_date ?? today),
         starts_at: `${String(input.p_date ?? today)}T${String(input.p_time ?? "09:00")}:00-03:00`,
         duration_minutes: 45,
@@ -228,6 +251,38 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
 
     if (pathname === "/rest/v1/services") {
       await respond(route, rowResponse(request, services));
+      return;
+    }
+
+    if (pathname === "/rest/v1/barber_service_prices") {
+      if (request.method() === "GET") {
+        await respond(route, barberServicePrices);
+        return;
+      }
+
+      const barberId = stripEq(url.searchParams.get("barber_id") ?? "");
+      const serviceId = stripEq(url.searchParams.get("service_id") ?? "");
+      if (request.method() === "DELETE") {
+        const index = barberServicePrices.findIndex(
+          (item) => item.barber_id === barberId && item.service_id === serviceId,
+        );
+        if (index >= 0) barberServicePrices.splice(index, 1);
+        await respond(route, []);
+        return;
+      }
+
+      const input = postData(request.postData());
+      const index = barberServicePrices.findIndex(
+        (item) => item.barber_id === input.barber_id && item.service_id === input.service_id,
+      );
+      const next = {
+        barber_id: String(input.barber_id),
+        service_id: String(input.service_id),
+        price: Number(input.price),
+      };
+      if (index >= 0) barberServicePrices[index] = next;
+      else barberServicePrices.push(next);
+      await respond(route, []);
       return;
     }
 

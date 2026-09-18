@@ -91,17 +91,24 @@ function logServerError(error: unknown) {
 
 function withSecurityHeaders(response: Response, request: Request) {
   const headers = new Headers(response.headers);
+  const pathname = new URL(request.url).pathname;
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
-  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("X-DNS-Prefetch-Control", "off");
+  headers.set("Referrer-Policy", "no-referrer");
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  headers.set("Cross-Origin-Resource-Policy", "same-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
   headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; upgrade-insecure-requests",
   );
+  if (/^\/(login|set-password|owner|barber|client)(\/|$)/.test(pathname)) {
+    headers.set("Cache-Control", "no-store, max-age=0");
+    headers.set("Pragma", "no-cache");
+  }
   if (new URL(request.url).protocol === "https:") {
-    headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   }
   return new Response(response.body, {
     status: response.status,

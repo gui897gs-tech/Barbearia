@@ -38,24 +38,23 @@ function OwnerFinancial() {
   const revenue = sumRevenue(currentMonth);
   const previousRevenue = sumRevenue(previousMonth);
   const variation = previousRevenue ? ((revenue - previousRevenue) / previousRevenue) * 100 : null;
-  const commissions = buildCommissions(currentMonth, employees);
-  const totalCommissions = commissions.reduce((sum, item) => sum + item.commission, 0);
+  const fixedFees = buildFixedFees(currentMonth, employees);
+  const totalFixedFees = fixedFees.reduce((sum, item) => sum + item.fixedFee, 0);
   const inventoryValue = products.reduce((sum, product) => sum + product.stock * product.price, 0);
   const chartData = buildLastTwelveMonths(completed);
 
-  function exportCommissions() {
+  function exportFixedFees() {
     const downloaded = downloadCsv(
-      `comissoes-${formatDateKey(new Date())}.csv`,
-      commissions.map((item) => ({
+      `valores-fixos-${formatDateKey(new Date())}.csv`,
+      fixedFees.map((item) => ({
         barbeiro: item.employee.name,
         atendimentos: item.appointments,
         faturamento: item.revenue,
-        taxa_percentual: item.rate,
-        comissao: item.commission,
+        valor_fixo: item.fixedFee,
       })),
     );
-    if (downloaded) notifySuccess("Comissões exportadas.");
-    else notifyError("Não há comissões para exportar.");
+    if (downloaded) notifySuccess("Valores fixos exportados.");
+    else notifyError("Não há valores fixos para exportar.");
   }
 
   return (
@@ -63,7 +62,7 @@ function OwnerFinancial() {
       <PageHeader
         eyebrow="Receita comprovada"
         title="Visão financeira"
-        subtitle="Faturamento e comissões derivados dos atendimentos concluídos."
+        subtitle="Faturamento dos serviços e valores fixos pagos pelos barbeiros."
       />
 
       {loading ? (
@@ -89,8 +88,8 @@ function OwnerFinancial() {
               icon={ReceiptText}
             />
             <StatCard
-              label="Comissões estimadas"
-              value={formatCurrency(totalCommissions)}
+              label="Valores fixos mensais"
+              value={formatCurrency(totalFixedFees)}
               icon={Wallet}
             />
             <StatCard
@@ -160,16 +159,16 @@ function OwnerFinancial() {
           <section className="glass-card mt-6 overflow-hidden rounded-2xl">
             <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>
-                <h2 className="font-display text-xl">Comissões deste mês</h2>
+                <h2 className="font-display text-xl">Valores fixos deste mês</h2>
                 <p className="text-xs text-muted-foreground">
-                  Estimativa por taxa cadastrada em cada profissional.
+                  Valor mensal que cada barbeiro paga à barbearia, sem comissão percentual.
                 </p>
               </div>
-              <Button variant="outline" size="sm" onClick={exportCommissions}>
+              <Button variant="outline" size="sm" onClick={exportFixedFees}>
                 <Download className="h-4 w-4" /> Exportar CSV
               </Button>
             </div>
-            {commissions.length ? (
+            {fixedFees.length ? (
               <>
                 <div className="hidden overflow-x-auto md:block">
                   <table className="w-full text-sm">
@@ -178,12 +177,11 @@ function OwnerFinancial() {
                         <th className="px-6 py-4">Barbeiro</th>
                         <th className="px-6 py-4">Atendimentos</th>
                         <th className="px-6 py-4">Faturamento</th>
-                        <th className="px-6 py-4">Taxa</th>
-                        <th className="px-6 py-4 text-right">Comissão</th>
+                        <th className="px-6 py-4 text-right">Valor fixo</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {commissions.map((item) => (
+                      {fixedFees.map((item) => (
                         <tr
                           key={item.employee.id}
                           className="border-b border-border/60 last:border-0"
@@ -202,9 +200,8 @@ function OwnerFinancial() {
                           </td>
                           <td className="px-6 py-4">{item.appointments}</td>
                           <td className="px-6 py-4">{formatCurrency(item.revenue)}</td>
-                          <td className="px-6 py-4 text-muted-foreground">{item.rate}%</td>
                           <td className="px-6 py-4 text-right font-medium text-gold">
-                            {formatCurrency(item.commission)}
+                            {formatCurrency(item.fixedFee)}
                           </td>
                         </tr>
                       ))}
@@ -212,17 +209,17 @@ function OwnerFinancial() {
                   </table>
                 </div>
                 <div className="divide-y divide-border md:hidden">
-                  {commissions.map((item) => (
+                  {fixedFees.map((item) => (
                     <article key={item.employee.id} className="p-4">
                       <div className="flex justify-between gap-3">
                         <div>
                           <h3 className="font-display text-lg">{item.employee.name}</h3>
                           <p className="text-xs text-muted-foreground">
-                            {item.appointments} atendimentos · {item.rate}%
+                            {item.appointments} atendimentos
                           </p>
                         </div>
                         <span className="font-display text-lg text-gold">
-                          {formatCurrency(item.commission)}
+                          {formatCurrency(item.fixedFee)}
                         </span>
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">
@@ -234,7 +231,7 @@ function OwnerFinancial() {
               </>
             ) : (
               <div className="p-5 sm:p-6">
-                <Empty text="Nenhuma comissão gerada neste mês." />
+                <Empty text="Nenhum valor fixo cadastrado para a equipe." />
               </div>
             )}
           </section>
@@ -269,23 +266,21 @@ function filterMonth(appointments: AppointmentRecord[], reference: Date) {
 function sumRevenue(appointments: AppointmentRecord[]) {
   return appointments.reduce((sum, item) => sum + item.price, 0);
 }
-function buildCommissions(appointments: AppointmentRecord[], employees: EmployeeRecord[]) {
+function buildFixedFees(appointments: AppointmentRecord[], employees: EmployeeRecord[]) {
   return employees
     .map((employee) => {
       const matching = appointments.filter(
         (item) => item.barber_id === employee.id || item.barber === employee.name,
       );
       const revenue = sumRevenue(matching);
-      const rate = employee.commissionRate ?? 30;
       return {
         employee,
         appointments: matching.length,
         revenue,
-        rate,
-        commission: (revenue * rate) / 100,
+        fixedFee: employee.fixedFee ?? 0,
       };
     })
-    .filter((item) => item.appointments > 0)
+    .filter((item) => item.fixedFee > 0)
     .sort((a, b) => b.revenue - a.revenue);
 }
 function buildLastTwelveMonths(appointments: AppointmentRecord[]) {

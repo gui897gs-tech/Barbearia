@@ -14,8 +14,16 @@ export type ServiceRecord = (typeof serviceSeed)[number] & {
 };
 
 export type ProductRecord = (typeof productSeed)[number] & {
+  image?: string;
   active?: boolean;
   created_at?: string;
+};
+
+export type BarberServicePrice = {
+  barber_id: string;
+  service_id: string;
+  price: number;
+  updated_at?: string;
 };
 
 export type EmployeeRecord = (typeof employeePerf)[number] & {
@@ -28,6 +36,7 @@ export type EmployeeRecord = (typeof employeePerf)[number] & {
   phone?: string;
   specialties?: string[];
   commissionRate?: number;
+  fixedFee?: number;
 };
 
 export type AppointmentRecord = (typeof appointmentSeed)[number] & {
@@ -47,6 +56,7 @@ const storageKeys = {
   employees: "kings-barber-employees",
   appointments: "kings-barber-appointments",
   settings: "kings-barber-settings",
+  barberServicePrices: "kings-barber-service-prices",
 };
 
 export type BusinessSettingsRecord = {
@@ -93,6 +103,7 @@ type ProductDatabaseRow = {
   stock: number;
   price: number;
   sold: number;
+  image?: string | null;
   active?: boolean;
   created_at?: string;
 };
@@ -115,6 +126,7 @@ type BarberDatabaseRow = {
   phone?: string;
   specialties?: string[];
   commission_rate?: number;
+  fixed_fee?: number;
 };
 
 type AppointmentDatabaseRow = {
@@ -166,6 +178,77 @@ export async function deleteService(id: string) {
   deleteLocal(storageKeys.services, serviceSeed, id);
 }
 
+export async function listBarberServicePrices(): Promise<BarberServicePrice[]> {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("barber_service_prices")
+      .select("barber_id,service_id,price,updated_at")
+      .order("barber_id");
+    if (error) throwRepositoryError("carregar os preços por profissional", error);
+    return (data ?? []).map((row) => ({ ...row, price: Number(row.price) }));
+  }
+
+  return readLocal<BarberServicePrice & { id: string }>(storageKeys.barberServicePrices, []).map(
+    ({ id: _id, ...row }) => row,
+  );
+}
+
+export async function saveBarberServicePrice(
+  barberId: string,
+  serviceId: string,
+  price: number | null,
+): Promise<void> {
+  if (price !== null && (!Number.isFinite(price) || price < 0)) {
+    throw new Error("Informe um preço válido.");
+  }
+
+  if (supabase) {
+    const query = supabase
+      .from("barber_service_prices")
+      .delete()
+      .eq("barber_id", barberId)
+      .eq("service_id", serviceId);
+    if (price === null) {
+      const { error } = await query;
+      if (error) throwRepositoryError("remover o preço personalizado", error);
+      return;
+    }
+
+    const { error } = await supabase.from("barber_service_prices").upsert({
+      barber_id: barberId,
+      service_id: serviceId,
+      price,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throwRepositoryError("salvar o preço por profissional", error);
+    return;
+  }
+
+  const id = `${barberId}:${serviceId}`;
+  if (price === null) {
+    deleteLocal(storageKeys.barberServicePrices, [], id);
+    return;
+  }
+  upsertLocal(storageKeys.barberServicePrices, [], {
+    id,
+    barber_id: barberId,
+    service_id: serviceId,
+    price,
+  });
+}
+
+export function resolveBarberServicePrice(
+  prices: BarberServicePrice[],
+  barberId: string,
+  serviceId: string,
+  defaultPrice: number,
+) {
+  return (
+    prices.find((item) => item.barber_id === barberId && item.service_id === serviceId)?.price ??
+    defaultPrice
+  );
+}
+
 export async function listProducts(): Promise<ProductRecord[]> {
   if (supabase) {
     const { data, error } = await supabase.from("products").select("*").order("name");
@@ -185,6 +268,35 @@ export async function saveProduct(product: ProductRecord): Promise<ProductRecord
   }
 
   return upsertLocal(storageKeys.products, productSeed, product);
+}
+
+export async function recordProductSale(
+  product: ProductRecord,
+  quantity: number,
+): Promise<ProductRecord> {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new Error("Informe uma quantidade válida para a venda.");
+  }
+
+  if (supabase) {
+    const { data, error } = await supabase.rpc("record_product_sale", {
+      p_product_id: product.id,
+      p_quantity: quantity,
+    });
+    if (error) throwRepositoryError("registrar a venda do produto", error);
+    return fromProductRow(data as ProductDatabaseRow);
+  }
+
+  if (quantity > product.stock) {
+    throw new Error("A quantidade vendida é maior que o estoque disponível.");
+  }
+
+  const updated = {
+    ...product,
+    stock: product.stock - quantity,
+    sold: product.sold + quantity,
+  };
+  return upsertLocal(storageKeys.products, productSeed, updated);
 }
 
 export async function deleteProduct(id: string) {
@@ -308,12 +420,61 @@ export async function updateBarberAppointmentStatus(
 export async function saveEmployee(employee: EmployeeRecord): Promise<EmployeeRecord> {
   if (supabase) {
     const payload = toBarberRow(employee);
-    const { data, error } = await supabase.from("barbers").upsert(payload).select("*").single();
-    if (error) throwRepositoryError("salvar o profissional", error);
-    return fromBarberRow(data);
+    const result = await supabase.from("barbers").upsert(payload).select("*").single();
+    if (!result.error) return fromBarberRow(result.data);
+
+    // Keep profile creation working while an older remote schema is waiting for
+    // the fixed-fee migration. The configured value is retained in this session
+    // and becomes persistent as soon as the migration is applied.
+    if (isMissingOptionalBarberColumn(result.error)) {
+      const legacyPayload = toLegacyBarberRow(employee);
+      const legacyResult = await supabase
+        .from("barbers")
+        .upsert(legacyPayload)
+        .select("*")
+        .single();
+      if (legacyResult.error) throwRepositoryError("salvar o profissional", legacyResult.error);
+      return { ...fromBarberRow(legacyResult.data), fixedFee: employee.fixedFee ?? 0 };
+    }
+
+    throwRepositoryError("salvar o profissional", result.error);
   }
 
   return upsertLocal(storageKeys.employees, employeePerf, employee);
+}
+
+export async function updateEmployeeImage(
+  employee: EmployeeRecord,
+  image: string,
+): Promise<EmployeeRecord> {
+  const updatedEmployee = { ...employee, image };
+
+  if (supabase) {
+    const result = await supabase
+      .from("barbers")
+      .update({ image: image.trim() || null })
+      .eq("id", employee.id)
+      .select("*")
+      .single();
+    if (result.error) throwRepositoryError("atualizar a foto do profissional", result.error);
+    return fromBarberRow(result.data);
+  }
+
+  return upsertLocal(storageKeys.employees, employeePerf, updatedEmployee);
+}
+
+function isMissingOptionalBarberColumn(error: {
+  code?: string;
+  message?: string;
+  details?: string;
+}) {
+  const description = `${error.message ?? ""} ${error.details ?? ""}`.toLowerCase();
+  return (
+    error.code === "PGRST204" ||
+    error.code === "42703" ||
+    description.includes("schema cache") ||
+    description.includes("column")
+  );
 }
 
 export async function deleteEmployee(id: string) {
@@ -524,7 +685,8 @@ export async function listClientAppointments(customerId: string): Promise<Appoin
       .from("appointments")
       .select("*")
       .eq("customer_id", customerId)
-      .order("starts_at", { ascending: false });
+      .order("starts_at", { ascending: false })
+      .limit(500);
     if (error) throwRepositoryError("carregar seu histórico", error);
     return (data ?? []).map(fromAppointmentRow);
   }
@@ -621,6 +783,7 @@ function fromProductRow(row: ProductDatabaseRow): ProductRecord {
     stock: row.stock,
     price: row.price,
     sold: row.sold,
+    image: row.image ?? "",
     active: row.active,
     created_at: row.created_at,
   };
@@ -633,6 +796,7 @@ function toProductRow(product: ProductRecord) {
     stock: product.stock,
     price: product.price,
     sold: product.sold,
+    image: product.image?.trim() || null,
     active: product.active ?? true,
   };
 }
@@ -655,7 +819,8 @@ function fromBarberRow(row: BarberDatabaseRow): EmployeeRecord {
     bio: row.bio,
     phone: row.phone,
     specialties: row.specialties ?? [],
-    commissionRate: row.commission_rate ?? 30,
+    commissionRate: 0,
+    fixedFee: row.fixed_fee ?? 0,
   };
 }
 
@@ -676,7 +841,25 @@ function toBarberRow(employee: EmployeeRecord) {
     bio: employee.bio,
     phone: employee.phone,
     specialties: employee.specialties ?? [],
-    commission_rate: employee.commissionRate ?? 30,
+    commission_rate: 0,
+    fixed_fee: employee.fixedFee ?? 0,
+  };
+}
+
+function toLegacyBarberRow(employee: EmployeeRecord) {
+  return {
+    id: employee.id,
+    name: employee.name,
+    title: employee.title,
+    rating: employee.rating,
+    image: employee.image,
+    revenue: employee.revenue,
+    appts: employee.appts,
+    commission: 0,
+    email: employee.email,
+    access_status: employee.accessStatus || "local",
+    access_user_id: employee.accessUserId,
+    active: employee.active ?? true,
   };
 }
 

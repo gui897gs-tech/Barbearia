@@ -1,7 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.106.1";
 import { z } from "npm:zod@3.24.2";
 
-const requestBuckets = new Map<string, { count: number; resetsAt: number }>();
 const inviteSchema = z.object({
   name: z.string().trim().min(3).max(120),
   email: z
@@ -12,28 +11,34 @@ const inviteSchema = z.object({
     .transform((value) => value.toLowerCase()),
   title: z.string().trim().min(2).max(120).default("Barbeiro"),
   image: z.union([z.string().trim().url(), z.literal("")]).default(""),
-  commissionRate: z.coerce.number().min(0).max(100).default(30),
+  fixedFee: z.coerce.number().min(0).max(1000000).default(0),
 });
 
 Deno.serve(async (request) => {
-  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "";
+  const allowedOrigins = (Deno.env.get("ALLOWED_ORIGIN") || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   const requestOrigin = request.headers.get("Origin") || "";
+  const originAllowed = allowedOrigins.length > 0 && allowedOrigins.includes(requestOrigin);
   const corsHeaders = {
-    "Access-Control-Allow-Origin": requestOrigin === allowedOrigin ? requestOrigin : allowedOrigin,
+    "Access-Control-Allow-Origin": originAllowed ? requestOrigin : allowedOrigins[0] || "",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
   };
 
   if (request.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return originAllowed
+      ? new Response("ok", { headers: corsHeaders })
+      : json({ error: "Origin not allowed." }, 403, corsHeaders);
   }
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed." }, 405, corsHeaders);
   }
 
-  if (allowedOrigin && requestOrigin !== allowedOrigin) {
+  if (!originAllowed) {
     return json({ error: "Origin not allowed." }, 403, corsHeaders);
   }
 
@@ -60,7 +65,18 @@ Deno.serve(async (request) => {
       return json({ error: "Only owner users can create barber access." }, 403, corsHeaders);
     }
 
-    if (!consumeRequest(callerData.user.id)) {
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: quotaAllowed, error: quotaError } = await adminClient.rpc(
+      "consume_owner_invite_quota",
+      { p_owner_id: callerData.user.id },
+    );
+    if (quotaError) {
+      console.error(JSON.stringify({ event: "invite_rate_limit_failed" }));
+      return json({ error: "Unable to process the invitation." }, 503, corsHeaders);
+    }
+    if (!quotaAllowed) {
       return json({ error: "Too many invitations. Try again in a few minutes." }, 429, corsHeaders);
     }
 
@@ -68,20 +84,23 @@ Deno.serve(async (request) => {
     if (!parsedBody.success) {
       return json({ error: "Invalid invitation data." }, 400, corsHeaders);
     }
-    const { name, email, title, image, commissionRate } = parsedBody.data;
+    const { name, email, title, image, fixedFee } = parsedBody.data;
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const appUrl = getAllowedAppUrl(Deno.env.get("APP_URL"), allowedOrigins);
+    if (!appUrl) {
+      return json({ error: "Application URL is not configured safely." }, 500, corsHeaders);
+    }
     const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
       data: {
         full_name: name,
         title,
         image,
       },
-      redirectTo: `${Deno.env.get("APP_URL") || allowedOrigin}/login`,
+      redirectTo: `${appUrl}/set-password`,
     });
 
     if (error) {
-      return json({ error: error.message }, 400, corsHeaders);
+      return json({ error: "Unable to send the invitation." }, 400, corsHeaders);
     }
 
     const { error: roleError } = await adminClient.auth.admin.updateUserById(data.user.id, {
@@ -105,7 +124,8 @@ Deno.serve(async (request) => {
       revenue: 0,
       appts: 0,
       commission: 0,
-      commission_rate: commissionRate,
+      commission_rate: 0,
+      fixed_fee: fixedFee,
       email,
       access_status: "pending",
       access_user_id: data.user.id,
@@ -130,11 +150,13 @@ Deno.serve(async (request) => {
       corsHeaders,
     );
   } catch (error) {
-    return json(
-      { error: error instanceof Error ? error.message : "Unexpected error." },
-      500,
-      corsHeaders,
+    console.error(
+      JSON.stringify({
+        event: "create_barber_failed",
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      }),
     );
+    return json({ error: "Unexpected error." }, 500, corsHeaders);
   }
 });
 
@@ -144,18 +166,30 @@ function json(body: unknown, status = 200, corsHeaders: Record<string, string>) 
     headers: {
       ...corsHeaders,
       "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }
 
-function consumeRequest(userId: string) {
-  const now = Date.now();
-  const current = requestBuckets.get(userId);
-  if (!current || current.resetsAt <= now) {
-    requestBuckets.set(userId, { count: 1, resetsAt: now + 5 * 60_000 });
-    return true;
+function getAllowedAppUrl(value: string | undefined, allowedOrigins: string[]) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const localHttp = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+    if (
+      (url.protocol !== "https:" && !localHttp) ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      !allowedOrigins.includes(url.origin)
+    ) {
+      return null;
+    }
+    return url.origin;
+  } catch {
+    return null;
   }
-  if (current.count >= 5) return false;
-  current.count += 1;
-  return true;
 }

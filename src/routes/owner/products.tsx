@@ -6,10 +6,12 @@ import {
   deleteProduct,
   listProducts,
   ProductRecord,
+  recordProductSale,
   saveProduct,
 } from "@/data/repositories/business-repository";
-import { Package, Plus, AlertTriangle, Trash2, X } from "lucide-react";
+import { Package, Plus, AlertTriangle, ShoppingCart, Trash2, X, ImagePlus } from "lucide-react";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
+import { uploadProductImage } from "@/shared/images/product-image";
 
 type Product = ProductRecord;
 
@@ -22,6 +24,7 @@ function ProductsPage() {
   const [productList, setProductList] = useState<Product[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [addingProduct, setAddingProduct] = useState(false);
+  const [sellingProduct, setSellingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     void listProducts().then(setProductList).catch(notifyError);
@@ -71,6 +74,13 @@ function ProductsPage() {
     } catch (error) {
       notifyError(error);
     }
+  }
+
+  async function handleSale(product: Product, quantity: number) {
+    const saved = await recordProductSale(product, quantity);
+    setProductList((items) => items.map((item) => (item.id === saved.id ? saved : item)));
+    setSellingProduct(null);
+    notifySuccess(`${quantity} ${quantity === 1 ? "unidade vendida" : "unidades vendidas"}.`);
   }
 
   return (
@@ -123,7 +133,22 @@ function ProductsPage() {
                 key={product.id}
                 className="border-b border-border/40 hover:bg-accent/30 transition"
               >
-                <td className="px-6 py-4 font-medium">{product.name}</td>
+                <td className="px-6 py-4 font-medium">
+                  <div className="flex items-center gap-3">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={`Imagem de ${product.name}`}
+                        className="h-11 w-11 rounded-lg border border-border object-cover"
+                      />
+                    ) : (
+                      <div className="grid h-11 w-11 place-items-center rounded-lg border border-border bg-accent/40 text-muted-foreground">
+                        <Package className="h-5 w-5" />
+                      </div>
+                    )}
+                    <span>{product.name}</span>
+                  </div>
+                </td>
                 <td className="px-6 py-4 text-gold">{formatCurrency(product.price)}</td>
                 <td className="px-6 py-4">
                   <span className={`${product.stock < 10 ? "text-destructive" : ""}`}>
@@ -133,6 +158,14 @@ function ProductsPage() {
                 <td className="px-6 py-4">{product.sold}</td>
                 <td className="px-6 py-4">
                   <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      disabled={product.stock === 0}
+                      onClick={() => setSellingProduct(product)}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-gold hover:text-gold-hover disabled:cursor-not-allowed disabled:opacity-40 transition"
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5" /> Registrar venda
+                    </button>
                     <button
                       type="button"
                       onClick={() => setEditingProduct(product)}
@@ -172,6 +205,14 @@ function ProductsPage() {
           onSave={handleCreate}
         />
       )}
+
+      {sellingProduct && (
+        <SaleDialog
+          product={sellingProduct}
+          onClose={() => setSellingProduct(null)}
+          onSave={handleSale}
+        />
+      )}
     </AppShell>
   );
 }
@@ -190,7 +231,27 @@ function ProductDialog({
   const [name, setName] = useState(product.name);
   const [price, setPrice] = useState(String(product.price));
   const [stock, setStock] = useState(String(product.stock));
-  const [sold, setSold] = useState(String(product.sold));
+  const [image, setImage] = useState(product.image ?? "");
+  const [imageError, setImageError] = useState("");
+  const [processingImage, setProcessingImage] = useState(false);
+
+  async function handleImageFile(file: File | undefined) {
+    if (!file) return;
+    setImageError("");
+
+    setProcessingImage(true);
+    try {
+      setImage(await uploadProductImage(file, product.id));
+    } catch (error) {
+      setImageError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível processar essa imagem. Tente outra foto.",
+      );
+    } finally {
+      setProcessingImage(false);
+    }
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -200,7 +261,8 @@ function ProductDialog({
       name: name.trim(),
       price: Number(price),
       stock: Number(stock),
-      sold: Number(sold),
+      sold: product.sold,
+      image,
     });
   }
 
@@ -227,7 +289,48 @@ function ProductDialog({
 
         <div className="mt-6 space-y-4">
           <Field label="Nome do produto" value={name} onChange={setName} required />
-          <div className="grid grid-cols-3 gap-3">
+          <div>
+            <span className="text-xs text-muted-foreground">Imagem do produto</span>
+            <div className="mt-2 flex items-center gap-4">
+              <div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-accent/40">
+                {image ? (
+                  <img src={image} alt="Prévia do produto" className="h-full w-full object-cover" />
+                ) : (
+                  <ImagePlus className="h-7 w-7 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-gold/40 px-4 py-2.5 text-sm text-gold hover:bg-gold/10">
+                  <ImagePlus className="h-4 w-4" />
+                  {processingImage ? "Processando..." : image ? "Trocar imagem" : "Escolher imagem"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    className="sr-only"
+                    disabled={processingImage}
+                    onChange={(event) => {
+                      void handleImageFile(event.target.files?.[0]);
+                      event.target.value = "";
+                    }}
+                  />
+                </label>
+                {image && (
+                  <button
+                    type="button"
+                    onClick={() => setImage("")}
+                    className="block text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    Remover imagem
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Escolha uma foto da galeria do celular. Ela será otimizada automaticamente.
+            </p>
+            {imageError && <p className="mt-1 text-xs text-destructive">{imageError}</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Preco" value={price} onChange={setPrice} type="number" min="0" required />
             <Field
               label="Estoque"
@@ -237,15 +340,10 @@ function ProductDialog({
               min="0"
               required
             />
-            <Field
-              label="Vendidos"
-              value={sold}
-              onChange={setSold}
-              type="number"
-              min="0"
-              required
-            />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Quantidade vendida: {product.sold}. Use “Registrar venda” para atualizar este total.
+          </p>
         </div>
 
         <div className="mt-6 flex gap-3">
@@ -258,9 +356,112 @@ function ProductDialog({
           </button>
           <button
             type="submit"
-            className="flex-1 rounded-xl gradient-gold px-4 py-3 text-sm font-medium text-primary-foreground gold-glow"
+            disabled={processingImage || Boolean(imageError)}
+            className="flex-1 rounded-xl gradient-gold px-4 py-3 text-sm font-medium text-primary-foreground gold-glow disabled:opacity-60"
           >
             Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function SaleDialog({
+  product,
+  onClose,
+  onSave,
+}: {
+  product: Product;
+  onClose: () => void;
+  onSave: (product: Product, quantity: number) => Promise<void>;
+}) {
+  const [quantity, setQuantity] = useState("1");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const parsedQuantity = Number(quantity);
+  const total = Number.isFinite(parsedQuantity) ? product.price * parsedQuantity : 0;
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity <= 0) {
+      setError("Informe uma quantidade válida.");
+      return;
+    }
+    if (parsedQuantity > product.stock) {
+      setError(`Estoque disponível: ${product.stock}.`);
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(product, parsedQuantity);
+    } catch (saleError) {
+      setError(
+        saleError instanceof Error ? saleError.message : "Não foi possível registrar a venda.",
+      );
+      notifyError(saleError);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-gold">Registrar venda</div>
+            <h2 className="mt-1 font-display text-2xl">{product.name}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground hover:text-foreground"
+            aria-label="Fechar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <Field
+            label={`Quantidade (estoque: ${product.stock})`}
+            value={quantity}
+            onChange={(value) => {
+              setQuantity(value);
+              setError("");
+            }}
+            type="number"
+            min="1"
+            max={String(product.stock)}
+            required
+          />
+          <div className="flex items-center justify-between rounded-xl bg-accent/40 p-4 text-sm">
+            <span className="text-muted-foreground">Total da venda</span>
+            <strong className="text-gold">{formatCurrency(total)}</strong>
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 rounded-xl gradient-gold px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+          >
+            {saving ? "Registrando..." : "Confirmar venda"}
           </button>
         </div>
       </form>
@@ -275,6 +476,7 @@ function Field({
   type = "text",
   required = false,
   min,
+  max,
 }: {
   label: string;
   value: string;
@@ -282,6 +484,7 @@ function Field({
   type?: string;
   required?: boolean;
   min?: string;
+  max?: string;
 }) {
   return (
     <label className="block">
@@ -290,6 +493,7 @@ function Field({
         required={required}
         type={type}
         min={min}
+        max={max}
         step="1"
         value={value}
         onChange={(event) => onChange(event.target.value)}

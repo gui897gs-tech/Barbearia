@@ -226,7 +226,8 @@ export async function listCustomers() {
     const { data, error } = await supabase
       .from("customers")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(500);
     if (error) throwRepositoryError("carregar os clientes", error);
     return (data ?? []) as Customer[];
   }
@@ -238,7 +239,8 @@ export async function listCustomerHistory(customerId?: string) {
     let query = supabase
       .from("customer_history")
       .select("*")
-      .order("visited_at", { ascending: false });
+      .order("visited_at", { ascending: false })
+      .limit(1000);
     if (customerId) query = query.eq("customer_id", customerId);
     const { data, error } = await query;
     if (error) throwRepositoryError("carregar o histórico do cliente", error);

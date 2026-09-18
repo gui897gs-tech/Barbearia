@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { endOfMonth, format, isWithinInterval, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DollarSign, Loader2, Percent, ReceiptText, Wallet } from "lucide-react";
+import { DollarSign, Loader2, ReceiptText, Wallet } from "lucide-react";
 import { useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AppShell, PageHeader, StatCard } from "@/components/layout/app-shell";
@@ -28,8 +28,8 @@ function BarberRevenue() {
     isAppointmentWithin(appointment, startOfMonth(now), endOfMonth(now)),
   );
   const monthRevenue = sumRevenue(monthAppointments);
-  const commissionRate = profile?.commissionRate ?? 30;
-  const commission = monthRevenue * (commissionRate / 100);
+  const fixedFee = profile?.fixedFee ?? 0;
+  const balanceAfterFee = Math.max(0, monthRevenue - fixedFee);
   const weekData = buildDailyData(completed, 7);
   const yearData = buildMonthlyData(completed, now.getFullYear());
 
@@ -37,8 +37,8 @@ function BarberRevenue() {
     <AppShell role="barber">
       <PageHeader
         eyebrow="Produção registrada"
-        title="Faturamento e comissão"
-        subtitle="Valores calculados somente a partir de atendimentos concluídos."
+        title="Faturamento e valor fixo"
+        subtitle="O barbeiro recebe seus atendimentos e paga um valor mensal fixo à barbearia."
       />
 
       {loading ? (
@@ -58,8 +58,12 @@ function BarberRevenue() {
               value={String(monthAppointments.length)}
               icon={ReceiptText}
             />
-            <StatCard label="Taxa de comissão" value={`${commissionRate}%`} icon={Percent} />
-            <StatCard label="Comissão estimada" value={formatCurrency(commission)} icon={Wallet} />
+            <StatCard label="Valor fixo mensal" value={formatCurrency(fixedFee)} icon={Wallet} />
+            <StatCard
+              label="Saldo após valor fixo"
+              value={formatCurrency(balanceAfterFee)}
+              icon={DollarSign}
+            />
           </div>
 
           <div className="grid gap-6 xl:grid-cols-2">
@@ -78,8 +82,8 @@ function BarberRevenue() {
           </div>
 
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-            A comissão é uma estimativa sobre os atendimentos concluídos no sistema. Fechamentos,
-            descontos e repasses devem ser conciliados pelo proprietário.
+            Não há comissão percentual. O valor fixo mensal é definido pelo proprietário para cada
+            barbeiro e independe da quantidade de atendimentos realizados.
           </p>
         </>
       ) : (

@@ -18,6 +18,8 @@ export function useOwnerData() {
       ]);
       return { appointments, employees, products, services };
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   return {

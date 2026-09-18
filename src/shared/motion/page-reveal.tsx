@@ -17,13 +17,13 @@ export function PageReveal({ routeKey, children }: { routeKey: string; children:
         const timeline = gsap.timeline();
         timeline.fromTo(
           elements,
-          { autoAlpha: 0, y: 18 },
+          { autoAlpha: 0, y: 8 },
           {
             autoAlpha: 1,
             y: 0,
-            duration: 0.58,
-            stagger: 0.065,
-            ease: "power3.out",
+            duration: 0.24,
+            stagger: 0.02,
+            ease: "power2.out",
             clearProps: "opacity,visibility,transform",
           },
         );
@@ -32,12 +32,12 @@ export function PageReveal({ routeKey, children }: { routeKey: string; children:
           { scale: 0.985, transformOrigin: "50% 100%" },
           {
             scale: 1,
-            duration: 0.34,
-            stagger: 0.035,
+            duration: 0.18,
+            stagger: 0.01,
             ease: "power2.out",
             clearProps: "transform",
           },
-          0.08,
+          0.02,
         );
       });
 
