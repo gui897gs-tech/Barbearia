@@ -1,0 +1,62 @@
+name: Production health
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-health
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      APP_URL: https://kings-barber-management-eight.vercel.app
+      SUPABASE_URL: ${{ secrets.HEALTH_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.HEALTH_SUPABASE_ANON_KEY }}
+    steps:
+      - name: Check application and security headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          headers="$(mktemp)"
+          body="$(mktemp)"
+          curl --fail --silent --show-error \
+            --retry 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --dump-header "$headers" --output "$body" \
+            "$APP_URL/login"
+          grep -qi '^content-security-policy:' "$headers"
+          grep -qi '^strict-transport-security:' "$headers"
+          test -s "$body"
+
+      - name: Check public application routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in / /client/products; do
+            curl --fail --silent --show-error \
+              --retry 3 --retry-all-errors \
+              --connect-timeout 10 --max-time 30 \
+              --output /dev/null "$APP_URL$path"
+          done
+
+      - name: Check Supabase REST API
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_ANON_KEY"
+          curl --fail --silent --show-error \
+            --retry 3 --retry-all-errors \
+            --connect-timeout 10 --max-time 30 \
+            --header "apikey: $SUPABASE_ANON_KEY" \
+            --header "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            --output /dev/null \
+            "$SUPABASE_URL/rest/v1/services?select=id&limit=1"
