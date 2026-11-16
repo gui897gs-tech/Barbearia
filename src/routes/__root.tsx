@@ -33,7 +33,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error: _error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ reset }: { error: unknown; reset: () => void }) {
   const router = useRouter();
   return (
     <div className="kb-site grid min-h-screen place-items-center px-5">
