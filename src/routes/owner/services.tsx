@@ -13,7 +13,7 @@ import {
   saveService,
   ServiceRecord,
 } from "@/data/repositories/business-repository";
-import { Clock, Plus, Pencil, X } from "lucide-react";
+import { Clock, Plus, Pencil, X } from "@/components/icons";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 
 type Service = ServiceRecord;

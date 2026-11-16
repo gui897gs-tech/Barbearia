@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarX2, Loader2 } from "lucide-react";
+import { CalendarX2, Loader2 } from "@/components/icons";
 import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { formatCurrency } from "@/shared/utils/format";

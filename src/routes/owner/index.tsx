@@ -14,18 +14,8 @@ import {
   Appointment,
   AppointmentDialog,
 } from "@/features/appointments/components/appointment-dialog";
-import { DollarSign, Calendar, Users, TrendingUp, Plus, ArrowUpRight } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { DollarSign, Calendar, Users, TrendingUp, Plus, ArrowUpRight } from "@/components/icons";
+import { KbChart } from "@/components/charts/kb-chart";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 import { formatCurrency, formatDateKey, isCompletedStatus } from "@/shared/utils/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,48 +177,15 @@ function OwnerDashboard() {
             </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartConfig.data}>
-                <defs>
-                  <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  stroke="var(--muted-foreground)"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="var(--muted-foreground)"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => formatCurrency(Number(value))}
-                />
-                <Tooltip
-                  formatter={(value) => [formatCurrency(Number(value)), "Faturamento"]}
-                  labelFormatter={(label) => `${chartConfig.subtitle}: ${label}`}
-                  contentStyle={{
-                    background: "var(--popover)",
-                    color: "var(--popover-foreground)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="faturamento"
-                  stroke="var(--gold)"
-                  strokeWidth={2}
-                  fill="url(#g1)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <KbChart
+              kind="area"
+              data={chartConfig.data}
+              xKey="label"
+              yKey="faturamento"
+              seriesLabel="Faturamento"
+              labelPrefix={chartConfig.subtitle}
+              formatValue={formatCurrency}
+            />
           </div>
         </div>
 
@@ -297,29 +254,15 @@ function OwnerDashboard() {
         <div className="glass-card rounded-2xl p-6">
           <div className="font-display text-lg mb-4">Faturamento anual</div>
           <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={annualChart.data}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  stroke="var(--muted-foreground)"
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis hide tickFormatter={(value) => formatCurrency(Number(value))} />
-                <Tooltip
-                  formatter={(value) => [formatCurrency(Number(value)), "Faturamento"]}
-                  contentStyle={{
-                    background: "var(--popover)",
-                    color: "var(--popover-foreground)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 12,
-                  }}
-                />
-                <Bar dataKey="faturamento" fill="var(--gold)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <KbChart
+              kind="bar"
+              data={annualChart.data}
+              xKey="label"
+              yKey="faturamento"
+              seriesLabel="Faturamento"
+              formatValue={formatCurrency}
+              hideYAxis
+            />
           </div>
           <div className="mt-4 pt-4 border-t border-border">
             <div className="text-xs text-muted-foreground">Produto mais vendido</div>

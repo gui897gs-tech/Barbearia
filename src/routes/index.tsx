@@ -1,149 +1,148 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
-  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Instagram,
-  LogIn,
   MapPin,
-  Menu,
-  PackageOpen,
-  Scissors,
-  Sparkles,
-  UserRound,
-  Users,
+  WhatsApp,
   X,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+} from "@/components/icons";
+import {
+  OpenStatusBadge,
+  SectionTitle,
+  SiteFooter,
+  SiteHeader,
+  WhatsAppFab,
+} from "@/components/site/site-chrome";
+import { useOpenStatus, useReveal } from "@/components/site/site-hooks";
 import { AppointmentRecord, listClientAppointments } from "@/data/repositories/business-repository";
-import { getRoleHome, useAuth } from "@/features/auth/auth-context";
+import { useAuth } from "@/features/auth/auth-context";
+import { brand, mapsSearchUrl, whatsappUrl } from "@/shared/brand";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "King's Barber — Tradição, estilo e excelência" },
+      { title: "King's Barber — Barbearia na Rua Nelson Mandela, 119" },
       {
         name: "description",
         content:
-          "Barbearia na Rua Nelson Mandela, 119. Cortes, barba e tratamentos com técnica e atenção aos detalhes.",
+          "Corte, barba, tranças, platinado e tratamentos. Agende online ou pelo WhatsApp. Rua Nelson Mandela, 119.",
       },
-      { name: "theme-color", content: "#050505" },
+      { name: "theme-color", content: "#0b0b0b" },
+      { property: "og:title", content: "King's Barber" },
+      {
+        property: "og:description",
+        content: "Barbearia com horário marcado. Veja serviços, preços e agende online.",
+      },
+      { property: "og:image", content: "/kings-barber/12-low-fade.jpg" },
     ],
   }),
   component: LandingPage,
 });
 
-type ServiceCategory = "Todos" | "Cortes" | "Barba" | "Combos" | "Tratamentos" | "Estilo";
-type WorkCategory = "Todos" | "Degradê" | "Tranças" | "Clássicos" | "Transformações";
-
-const navigation = [
-  ["Início", "#inicio"],
-  ["Serviços", "#servicos"],
-  ["Trabalhos", "#trabalhos"],
-  ["Produtos", "#produtos"],
-  ["Localização", "#localizacao"],
-] as const;
+type ServiceCategory = "Cortes" | "Barba" | "Combos" | "Tratamentos" | "Estilo";
+type WorkCategory = "Todos" | "Degradê" | "Tranças" | "Clássicos" | "Texturas";
 
 const services: Array<{
-  category: Exclude<ServiceCategory, "Todos">;
+  category: ServiceCategory;
   name: string;
   description: string;
   duration: string;
   price: string;
-  featured?: boolean;
 }> = [
   {
     category: "Cortes",
     name: "Corte masculino",
-    description: "Social, degradê ou low fade — a variação é escolhida na cadeira.",
+    description: "Social, degradê ou low fade.",
     duration: "45 min",
-    price: "R$ 40,00",
-    featured: true,
+    price: "R$ 40",
   },
   {
     category: "Cortes",
     name: "Corte infantil",
-    description: "Atendimento com paciência e no ritmo da criança.",
+    description: "Para crianças até 12 anos.",
     duration: "40 min",
-    price: "R$ 35,00",
-  },
-  {
-    category: "Barba",
-    name: "Barba e acabamento",
-    description: "Desenho, alinhamento e finalização.",
-    duration: "30 min",
-    price: "R$ 30,00",
-  },
-  {
-    category: "Combos",
-    name: "Corte + barba",
-    description: "O combo completo da casa, do cabelo ao contorno.",
-    duration: "1h10",
-    price: "R$ 65,00",
-    featured: true,
-  },
-  {
-    category: "Combos",
-    name: "Corte + sobrancelha",
-    description: "Corte com o olhar alinhado no mesmo horário.",
-    duration: "55 min",
-    price: "R$ 50,00",
-  },
-  {
-    category: "Tratamentos",
-    name: "Corte + hidratação",
-    description: "Corte com tratamento para devolver maciez aos fios.",
-    duration: "1h",
-    price: "R$ 60,00",
-  },
-  {
-    category: "Tratamentos",
-    name: "Corte + botox capilar",
-    description: "Redução de volume e brilho, com o corte finalizado.",
-    duration: "1h30",
-    price: "R$ 85,00",
-    featured: true,
-  },
-  {
-    category: "Estilo",
-    name: "Corte + nudred",
-    description: "Textura trabalhada na esponja, com acabamento nas laterais.",
-    duration: "1h10",
-    price: "R$ 60,00",
-  },
-  {
-    category: "Estilo",
-    name: "Corte + tranças",
-    description: "Tranças feitas fio a fio, com o degradê acompanhando o desenho.",
-    duration: "2h",
-    price: "a partir de R$ 100,00",
-    featured: true,
-  },
-  {
-    category: "Estilo",
-    name: "Nevou / platinado",
-    description: "Descoloração global e matização, com o corte finalizado.",
-    duration: "2h30",
-    price: "a partir de R$ 130,00",
-  },
-  {
-    category: "Barba",
-    name: "Sobrancelha",
-    description: "Design masculino respeitando o traço natural.",
-    duration: "15 min",
-    price: "R$ 15,00",
+    price: "R$ 35",
   },
   {
     category: "Cortes",
     name: "Pezinho / acabamento",
-    description: "Retoque rápido para manter o corte na régua.",
+    description: "Retoque do contorno entre um corte e outro.",
     duration: "20 min",
-    price: "R$ 15,00",
+    price: "R$ 15",
+  },
+  {
+    category: "Barba",
+    name: "Barba e acabamento",
+    description: "Desenho, alinhamento e toalha quente.",
+    duration: "30 min",
+    price: "R$ 30",
+  },
+  {
+    category: "Barba",
+    name: "Sobrancelha",
+    description: "Limpeza e alinhamento na navalha.",
+    duration: "15 min",
+    price: "R$ 15",
+  },
+  {
+    category: "Combos",
+    name: "Corte + barba",
+    description: "Corte e barba no mesmo horário.",
+    duration: "1h10",
+    price: "R$ 65",
+  },
+  {
+    category: "Combos",
+    name: "Corte + sobrancelha",
+    description: "Corte com sobrancelha na navalha.",
+    duration: "55 min",
+    price: "R$ 50",
+  },
+  {
+    category: "Tratamentos",
+    name: "Corte + hidratação",
+    description: "Corte com hidratação dos fios.",
+    duration: "1h",
+    price: "R$ 60",
+  },
+  {
+    category: "Tratamentos",
+    name: "Corte + botox capilar",
+    description: "Redução de volume e frizz, com corte.",
+    duration: "1h30",
+    price: "R$ 85",
+  },
+  {
+    category: "Estilo",
+    name: "Corte + nudred",
+    description: "Textura feita na esponja, com degradê.",
+    duration: "1h10",
+    price: "R$ 60",
+  },
+  {
+    category: "Estilo",
+    name: "Corte + tranças",
+    description: "Tranças nagô com degradê nas laterais.",
+    duration: "2h",
+    price: "a partir de R$ 100",
+  },
+  {
+    category: "Estilo",
+    name: "Nevou / platinado",
+    description: "Descoloração, matização e corte.",
+    duration: "2h30",
+    price: "a partir de R$ 130",
   },
 ];
+
+const serviceGroups: ServiceCategory[] = ["Cortes", "Barba", "Combos", "Tratamentos", "Estilo"];
 
 const gallery: Array<{
   src: string;
@@ -159,50 +158,62 @@ const gallery: Array<{
   },
   {
     src: "/kings-barber/03-corte-com-trancas.jpg",
-    alt: "Tranças com barba alinhada",
-    title: "Tranças com barba alinhada",
-    category: "Tranças",
-  },
-  {
-    src: "/kings-barber/11-corte-com-botox.jpg",
-    alt: "Corte curto com contorno fechado",
-    title: "Corte curto com contorno fechado",
-    category: "Transformações",
-  },
-  {
-    src: "/kings-barber/05-degrade-com-trancas.jpg",
-    alt: "Tranças fio a fio com degradê",
-    title: "Tranças fio a fio com degradê",
+    alt: "Tranças nagô com barba alinhada",
+    title: "Tranças com barba",
     category: "Tranças",
   },
   {
     src: "/kings-barber/04-resultado-corte-marco.jpg",
     alt: "Corte social com barba aparada",
-    title: "Social com barba aparada",
+    title: "Social com barba",
     category: "Clássicos",
   },
   {
     src: "/kings-barber/08-corte-nudred.jpg",
     alt: "Textura crespa com degradê alto",
-    title: "Textura crespa com degradê alto",
-    category: "Transformações",
+    title: "Nudred com degradê alto",
+    category: "Texturas",
   },
   {
-    src: "/kings-barber/09-resultado-dezembro.jpg",
-    alt: "Penteado com risco marcado",
-    title: "Penteado com risco marcado",
+    src: "/kings-barber/11-corte-com-botox.jpg",
+    alt: "Corte curto com contorno fechado",
+    title: "Degradê com contorno",
     category: "Degradê",
+  },
+  {
+    src: "/kings-barber/05-degrade-com-trancas.jpg",
+    alt: "Tranças fio a fio com degradê",
+    title: "Tranças com degradê",
+    category: "Tranças",
+  },
+  {
+    src: "/kings-barber/01-nevou-platinado.jpg",
+    alt: "Cliente com cabelo platinado e contorno alinhado",
+    title: "Platinado",
+    category: "Texturas",
   },
   {
     src: "/kings-barber/10-resultado-classico.jpg",
     alt: "Ondas com degradê fechado",
-    title: "Ondas com degradê fechado",
+    title: "Ondas com degradê",
     category: "Clássicos",
+  },
+  {
+    src: "/kings-barber/09-resultado-dezembro.jpg",
+    alt: "Penteado com risco marcado",
+    title: "Risco marcado",
+    category: "Degradê",
   },
   {
     src: "/kings-barber/07-corte-natural.jpg",
     alt: "Cachos com volume preservado",
-    title: "Cachos com volume preservado",
+    title: "Cachos naturais",
+    category: "Texturas",
+  },
+  {
+    src: "/kings-barber/06-pai-e-filho.jpg",
+    alt: "Cabelo penteado com volume no topo e degradê nas laterais",
+    title: "Volume com degradê",
     category: "Clássicos",
   },
 ];
@@ -211,95 +222,89 @@ const products = [
   {
     category: "Finalização",
     name: "Pomada modeladora matte",
-    description: "Fixação forte com efeito seco, sem pesar no fio. 100 g.",
+    detail: "100 g",
     price: "R$ 39,90",
     stock: "Disponível",
   },
   {
     category: "Finalização",
     name: "Pomada efeito brilho",
-    description: "Acabamento com brilho controlado para penteados. 100 g.",
+    detail: "100 g",
     price: "R$ 39,90",
     stock: "Disponível",
   },
   {
     category: "Barba",
     name: "Balm para barba",
-    description: "Controla o volume e dá acabamento ao desenho. 120 ml.",
+    detail: "120 ml",
     price: "R$ 34,90",
     stock: "Últimas unidades",
   },
   {
     category: "Barba",
     name: "Óleo para barba",
-    description: "Hidrata a pele por baixo da barba e reduz a coceira. 30 ml.",
+    detail: "30 ml",
     price: "R$ 29,90",
     stock: "Disponível",
   },
   {
     category: "Cuidado diário",
-    name: "Shampoo para cabelo e barba",
-    description: "Limpeza diária sem ressecar. 250 ml.",
+    name: "Shampoo cabelo e barba",
+    detail: "250 ml",
     price: "R$ 32,90",
     stock: "Disponível",
   },
   {
     category: "Cuidado diário",
     name: "Tônico capilar",
-    description: "Refresca o couro cabeludo e ajuda a manter o fio firme. 100 ml.",
+    detail: "100 ml",
     price: "R$ 44,90",
     stock: "Últimas unidades",
   },
   {
     category: "Barba",
     name: "Loção pós-barba",
-    description: "Acalma a pele logo depois da navalha. 120 ml.",
+    detail: "120 ml",
     price: "R$ 34,90",
     stock: "Indisponível",
   },
   {
     category: "Acessório",
     name: "Pente de madeira",
-    description: "Pente antiestático para finalizar cabelo e barba.",
+    detail: "Antiestático",
     price: "R$ 19,90",
     stock: "Disponível",
   },
 ];
 
+const heroPhotos = [
+  { src: "/kings-barber/12-low-fade.jpg", alt: "Low fade com topo texturizado" },
+  { src: "/kings-barber/03-corte-com-trancas.jpg", alt: "Tranças nagô com barba alinhada" },
+  { src: "/kings-barber/04-resultado-corte-marco.jpg", alt: "Corte social com barba aparada" },
+  { src: "/kings-barber/01-nevou-platinado.jpg", alt: "Cliente com cabelo platinado" },
+];
+
 function LandingPage() {
   const { initialized, user, role } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [headerSolid, setHeaderSolid] = useState(false);
-  const [serviceCategory, setServiceCategory] = useState<ServiceCategory>("Todos");
   const [workCategory, setWorkCategory] = useState<WorkCategory>("Todos");
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [upcomingAppointment, setUpcomingAppointment] = useState<AppointmentRecord | null>(null);
-  const [loadingAppointment, setLoadingAppointment] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => setHeaderSolid(window.scrollY > 24);
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const filteredGallery = useMemo(
+    () =>
+      workCategory === "Todos" ? gallery : gallery.filter((work) => work.category === workCategory),
+    [workCategory],
+  );
 
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileMenuOpen(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [mobileMenuOpen]);
+  useReveal();
 
   useEffect(() => {
     if (!initialized || !user || role !== "client") {
       setUpcomingAppointment(null);
-      setLoadingAppointment(false);
       return;
     }
 
     let active = true;
-    setLoadingAppointment(true);
     void listClientAppointments(user.id)
       .then((appointments) => {
         if (!active) return;
@@ -316,9 +321,6 @@ function LandingPage() {
       })
       .catch(() => {
         if (active) setUpcomingAppointment(null);
-      })
-      .finally(() => {
-        if (active) setLoadingAppointment(false);
       });
 
     return () => {
@@ -326,362 +328,277 @@ function LandingPage() {
     };
   }, [initialized, role, user]);
 
-  const filteredServices = useMemo(
-    () =>
-      serviceCategory === "Todos"
-        ? services
-        : services.filter((service) => service.category === serviceCategory),
-    [serviceCategory],
-  );
-
-  const filteredGallery = useMemo(
-    () =>
-      workCategory === "Todos" ? gallery : gallery.filter((work) => work.category === workCategory),
-    [workCategory],
-  );
-
   return (
-    <div className="kb-site relative min-h-screen overflow-x-hidden bg-[#050505] text-[#f4f0e8]">
-      <header
-        className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-500 ${
-          headerSolid || mobileMenuOpen
-            ? "border-white/10 bg-[#050505]/92 shadow-2xl shadow-black/30 backdrop-blur-xl"
-            : "border-transparent bg-transparent"
-        }`}
-      >
-        <div className="mx-auto flex h-[76px] max-w-[1280px] items-center justify-between gap-6 px-5 sm:px-8">
-          <a href="#inicio" aria-label="King's Barber — início" className="kb-focus shrink-0">
-            <img
-              src="/kings-barber-logo-light.png"
-              alt="King's Barber"
-              width={140}
-              height={78}
-              className="h-10 w-auto object-contain"
-            />
-          </a>
+    <div className="kb-site min-h-screen overflow-x-hidden">
+      <SiteHeader />
 
-          <nav className="hidden items-center gap-9 lg:flex" aria-label="Navegação principal">
-            {navigation.map(([label, href]) => (
-              <a
-                key={href}
-                href={href}
-                className="kb-focus text-[13.5px] text-[#a7a7aa] transition-colors duration-300 hover:text-[#f4f0e8]"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link
-              to="/agendar"
-              className="kb-btn kb-btn-gold kb-btn-sm kb-focus hidden sm:inline-flex"
-            >
-              Agendar horário
-            </Link>
-            {initialized && user ? (
-              <Link
-                to={role === "client" ? "/client/profile" : getRoleHome(role)}
-                aria-label={role === "client" ? "Abrir meus dados" : "Abrir meu painel"}
-                title={role === "client" ? "Abrir meus dados" : "Abrir meu painel"}
-                className="kb-focus grid h-11 w-11 place-items-center rounded-xl border border-white/15 text-[#f4f0e8] transition hover:border-[#c9a24a]/60 hover:text-[#e2c16b]"
-              >
-                <UserRound size={19} />
-              </Link>
-            ) : (
-              <Link
-                to="/login"
-                search={{ redirect: undefined, mode: "login" }}
-                aria-label="Entrar ou criar conta"
-                title="Entrar ou criar conta"
-                className="kb-focus grid h-11 w-11 place-items-center rounded-xl border border-white/15 text-[#f4f0e8] transition hover:border-[#c9a24a]/60 hover:text-[#e2c16b]"
-              >
-                <LogIn size={19} />
-              </Link>
-            )}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((open) => !open)}
-              className="kb-focus grid h-11 w-11 place-items-center rounded-xl border border-white/15 text-[#f4f0e8] lg:hidden"
-              aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
-        </div>
-
-        {mobileMenuOpen && (
-          <nav
-            className="border-t border-white/10 bg-[#050505] px-5 py-5 lg:hidden"
-            aria-label="Navegação móvel"
-          >
-            <div className="mx-auto flex max-w-[1280px] flex-col">
-              {navigation.map(([label, href]) => (
-                <a
-                  key={href}
-                  href={href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="border-b border-white/8 py-3.5 text-sm text-[#a7a7aa] transition hover:text-[#f4f0e8]"
-                >
-                  {label}
-                </a>
-              ))}
-              <Link
-                to="/agendar"
-                onClick={() => setMobileMenuOpen(false)}
-                className="kb-btn kb-btn-gold mt-5 sm:hidden"
-              >
+      <main>
+        {/* ───────── Abertura ───────── */}
+        <section id="inicio" className="relative pt-[72px]">
+          <div className="kb-container pb-12 pt-16 text-center sm:pb-16 sm:pt-24">
+            <p className="kb-eyebrow kb-hero-reveal">Barbearia · {brand.address.street}</p>
+            <h1 className="kb-editorial kb-hero-reveal mx-auto mt-5 max-w-3xl text-[clamp(2.6rem,7vw,4.8rem)] text-[#f2efe9] [animation-delay:80ms]">
+              Corte, barba e acabamento com hora marcada.
+            </h1>
+            <p className="kb-hero-reveal mx-auto mt-6 max-w-xl text-base leading-relaxed text-[#a3a09a] [animation-delay:160ms] sm:text-lg">
+              Escolha o serviço, o barbeiro e o horário pelo site. Se preferir, fale com a gente
+              pelo WhatsApp.
+            </p>
+            <div className="kb-hero-reveal mt-9 flex flex-col justify-center gap-3 [animation-delay:240ms] sm:flex-row">
+              <Link to="/agendar" className="kb-btn kb-btn-gold kb-focus">
                 Agendar horário
               </Link>
+              <a
+                href={whatsappUrl()}
+                target="_blank"
+                rel="noreferrer"
+                className="kb-btn kb-btn-whats kb-focus"
+              >
+                <WhatsApp size={18} /> Falar no WhatsApp
+              </a>
             </div>
-          </nav>
-        )}
-      </header>
+            <div className="kb-hero-reveal mt-6 [animation-delay:320ms]">
+              <OpenStatusBadge />
+            </div>
 
-      <main className="relative z-10">
-        <section id="inicio" className="relative overflow-hidden pt-[76px]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(58%_52%_at_74%_38%,rgba(201,162,74,0.16),transparent_68%)]" />
-          <div className="relative mx-auto grid max-w-[1280px] items-center gap-10 px-5 pb-20 pt-12 sm:gap-14 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-28 lg:pt-16">
-            <div>
-              <p className="kb-eyebrow kb-hero-reveal">Tradição • Estilo • Excelência</p>
-              <h1 className="kb-editorial kb-hero-reveal mt-6 text-[clamp(3.1rem,7.5vw,5.4rem)] [animation-delay:80ms]">
-                Seu visual.
-                <br />
-                Sua coroa.
-              </h1>
-              <p className="kb-hero-reveal mt-5 max-w-lg text-[15px] leading-relaxed text-[#a7a7aa] [animation-delay:160ms] sm:mt-7 sm:text-[17px]">
-                Na King's Barber, cada detalhe é pensado para você sair com presença, confiança e um
-                corte à sua altura.
-              </p>
-              {initialized && user && role === "client" && loadingAppointment ? (
-                <div className="mt-7 h-36 animate-pulse rounded-2xl border border-white/10 bg-white/[0.035]" />
-              ) : upcomingAppointment ? (
-                <UpcomingAppointmentCard appointment={upcomingAppointment} />
-              ) : null}
-              <div className="kb-hero-reveal mt-7 flex flex-col gap-2.5 [animation-delay:240ms] sm:mt-10 sm:flex-row sm:items-center">
-                <Link to="/agendar" className="kb-btn kb-btn-gold kb-focus">
-                  Agendar meu horário <ArrowRight size={16} />
-                </Link>
-                <a href="#servicos" className="kb-btn kb-btn-outline kb-focus">
-                  Conhecer serviços
-                </a>
-              </div>
+            {upcomingAppointment ? <UpcomingAppointment appointment={upcomingAppointment} /> : null}
+          </div>
 
-              <div className="kb-hero-reveal mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-white/10 pt-5 text-[13px] text-[#a7a7aa] [animation-delay:320ms] sm:mt-12 sm:gap-x-8 sm:pt-7">
-                <span className="flex items-center gap-2.5">
-                  <MapPin size={14} className="text-[#c9a24a]" /> Rua Nelson Mandela, 119
-                </span>
-                <span className="flex items-center gap-2.5">
-                  <Scissors size={14} className="text-[#c9a24a]" /> 12 serviços na cadeira
-                </span>
-                <a
-                  href="https://www.instagram.com/kiingsbarberr/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="kb-focus flex items-center gap-2.5 transition-colors hover:text-[#e2c16b]"
+          <div className="kb-container">
+            <div className="kb-hero-reveal grid grid-cols-2 gap-2 [animation-delay:200ms] sm:grid-cols-4 sm:gap-3">
+              {heroPhotos.map((photo, index) => (
+                <div
+                  key={photo.src}
+                  className={`overflow-hidden rounded-md bg-[#121212] ${index > 1 ? "hidden sm:block" : ""}`}
                 >
-                  <Instagram size={14} className="text-[#c9a24a]" /> @kiingsbarberr
-                </a>
-              </div>
-            </div>
-
-            <div className="kb-hero-reveal relative mx-auto w-full max-w-[560px] [animation-delay:120ms]">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[20px] border border-white/12 bg-black">
-                <img
-                  src="/kings-barber/01-nevou-platinado.jpg"
-                  alt="Cliente de perfil com cabelo platinado raspado e contorno alinhado"
-                  className="h-full w-full object-cover transition-transform duration-1000 hover:scale-[1.025]"
-                />
-              </div>
-              <div className="absolute -bottom-8 -left-6 hidden w-[150px] overflow-hidden rounded-[14px] border border-white/15 shadow-2xl shadow-black sm:block">
-                <img
-                  src="/kings-barber/12-low-fade.jpg"
-                  alt="Corte com topo texturizado e low fade"
-                  className="aspect-[3/4] w-full object-cover"
-                />
-              </div>
-              <div className="absolute -right-5 -top-6 hidden w-[124px] overflow-hidden rounded-[14px] border border-white/15 shadow-2xl shadow-black lg:block">
-                <img
-                  src="/kings-barber/05-degrade-com-trancas.jpg"
-                  alt="Tranças embutidas com degradê"
-                  className="aspect-square w-full object-cover"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-white/8">
-            <div className="kb-no-scrollbar flex gap-3 overflow-x-auto px-5 py-3.5 sm:px-8 sm:py-5">
-              {gallery
-                .slice(4)
-                .concat(gallery.slice(0, 1))
-                .map((work) => (
-                  <a
-                    key={`strip-${work.src}`}
-                    href="#trabalhos"
-                    className="kb-focus group w-[108px] shrink-0 overflow-hidden rounded-[10px] border border-white/10 transition-colors hover:border-[#c9a24a]/50 sm:w-[164px] sm:rounded-xl"
-                  >
-                    <img
-                      src={work.src}
-                      alt={work.alt}
-                      className="aspect-square w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                  </a>
-                ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="kb-section">
-          <div className="mx-auto grid max-w-[1280px] items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1fr_0.9fr] lg:gap-20">
-            <div>
-              <SectionHeading title="Aqui todo cliente é rei." />
-              <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-[#a7a7aa] sm:mt-6 sm:text-[15.5px]">
-                Mais do que um corte, um atendimento feito com técnica, atenção e personalidade — do
-                clássico ao mais atual.
-              </p>
-              <div className="mt-8 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:mt-12 sm:grid-cols-3">
-                <Feature
-                  icon={<Users size={19} />}
-                  title="Atendimento personalizado"
-                  text="Conversa antes da tesoura para entender o que combina com você."
-                />
-                <Feature
-                  icon={<Scissors size={19} />}
-                  title="Precisão nos detalhes"
-                  text="Contorno, transição e acabamento conferidos até o último fio."
-                />
-                <Feature
-                  icon={<Sparkles size={19} />}
-                  title="Estilo para todas as idades"
-                  text="Do primeiro corte da criança ao social de quem já sabe o que quer."
-                />
-              </div>
-            </div>
-            <ImageFrame
-              src="/kings-barber/06-pai-e-filho.jpg"
-              alt="Cabelo penteado com volume no topo e degradê nas laterais"
-              className="aspect-[4/5]"
-            />
-          </div>
-        </section>
-
-        <section id="servicos" className="kb-section scroll-mt-[76px]">
-          <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
-            <SectionHeading
-              title="Escolha seu ritual."
-              description="Cada serviço com o tempo que ele realmente leva — para a agenda ser honesta com o seu dia."
-            />
-            <FilterRow
-              options={["Todos", "Cortes", "Barba", "Combos", "Tratamentos", "Estilo"]}
-              active={serviceCategory}
-              onChange={(value) => setServiceCategory(value as ServiceCategory)}
-            />
-            <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredServices.map((service) => (
-                <article
-                  key={service.name}
-                  className="group flex min-h-[260px] flex-col bg-[#0e0e10] p-6 transition-colors duration-300 hover:bg-[#19191c] sm:p-7"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="kb-eyebrow !text-[9px]">{service.category}</span>
-                    {service.featured && (
-                      <span className="rounded-full border border-[#c9a24a]/35 bg-[#c9a24a]/8 px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] text-[#e2c16b]">
-                        Destaque
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="mt-6 text-lg font-semibold text-[#f4f0e8]">{service.name}</h3>
-                  <p className="mt-3 flex-1 text-[13.5px] leading-relaxed text-[#a7a7aa]">
-                    {service.description}
-                  </p>
-                  <div className="mt-7 flex items-end justify-between gap-4 border-t border-white/10 pt-5">
-                    <div>
-                      <span className="flex items-center gap-1.5 text-xs text-[#a7a7aa]">
-                        <Clock3 size={13} className="text-[#c9a24a]" /> {service.duration}
-                      </span>
-                      <div className="mt-2 text-[15px] font-semibold text-[#f4f0e8]">
-                        {service.price}
-                      </div>
-                    </div>
-                    <Link
-                      to="/agendar"
-                      className="kb-focus inline-flex items-center gap-1.5 text-xs font-semibold text-[#c9a24a] transition-colors hover:text-[#e2c16b]"
-                    >
-                      Agendar <ArrowRight size={14} />
-                    </Link>
-                  </div>
-                </article>
+                  <img
+                    src={photo.src}
+                    alt={photo.alt}
+                    fetchPriority={index < 2 ? "high" : "auto"}
+                    className="aspect-[3/4] w-full object-cover transition-transform duration-700 hover:scale-[1.03]"
+                  />
+                </div>
               ))}
             </div>
+
+            <dl className="mt-3 grid divide-y divide-white/10 rounded-md border border-white/10 text-left sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              <InfoCell icon={<MapPin size={18} />} label="Endereço">
+                <a
+                  href={mapsSearchUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="kb-focus kb-link"
+                >
+                  {brand.address.full}
+                </a>
+              </InfoCell>
+              <InfoCell icon={<Clock3 size={18} />} label="Horário">
+                Seg. a sáb., 09h às 19h
+              </InfoCell>
+              <InfoCell icon={<Instagram size={18} />} label="Instagram">
+                <a
+                  href={brand.instagram.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="kb-focus kb-link"
+                >
+                  {brand.instagram.handle}
+                </a>
+              </InfoCell>
+            </dl>
           </div>
         </section>
 
-        <section id="trabalhos" className="kb-section scroll-mt-[76px]">
-          <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
-            <SectionHeading title="Cortes que falam por você." />
-            <FilterRow
-              options={["Todos", "Degradê", "Tranças", "Clássicos", "Transformações"]}
+        {/* ───────── Serviços ───────── */}
+        <section id="servicos" className="kb-section scroll-mt-16">
+          <div className="kb-container">
+            <SectionTitle
+              eyebrow="Serviços"
+              title="Serviços e preços"
+              description="Valores de referência. O preço final pode variar conforme o profissional e aparece antes de você confirmar o agendamento."
+            />
+
+            <div
+              className="mx-auto mt-12 grid max-w-5xl gap-x-14 gap-y-10 md:grid-cols-2"
+              data-reveal
+            >
+              {serviceGroups.map((group) => (
+                <div key={group}>
+                  <h3 className="border-b border-[#c9a24a]/50 pb-2 text-xs font-bold uppercase tracking-[0.16em] text-[#c9a24a]">
+                    {group}
+                  </h3>
+                  <ul>
+                    {services
+                      .filter((service) => service.category === group)
+                      .map((service) => (
+                        <li key={service.name} className="border-b border-white/8">
+                          <Link
+                            to="/agendar"
+                            search={{ servico: service.name }}
+                            aria-label={`Agendar ${service.name}, ${service.price}`}
+                            className="kb-focus group flex items-start justify-between gap-6 py-4"
+                          >
+                            <span className="min-w-0">
+                              <span className="block text-[15px] font-semibold text-[#f2efe9] transition-colors group-hover:text-[#c9a24a]">
+                                {service.name}
+                              </span>
+                              <span className="mt-1 block text-[13px] text-[#a3a09a]">
+                                {service.description} · {service.duration}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-right">
+                              <span className="block text-[15px] font-semibold tabular-nums text-[#f2efe9]">
+                                {service.price}
+                              </span>
+                              <span className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-[#c9a24a] opacity-80 transition-opacity group-hover:opacity-100">
+                                Agendar <ArrowRight size={12} />
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+              <div className="flex flex-col justify-center rounded-md border border-white/10 bg-[#121212] p-6">
+                <p className="text-[15px] font-semibold text-[#f2efe9]">Não achou o que procura?</p>
+                <p className="mt-2 text-[13px] leading-relaxed text-[#a3a09a]">
+                  Mande uma foto do corte que você quer pelo WhatsApp e a gente confirma o serviço,
+                  o tempo e o valor.
+                </p>
+                <a
+                  href={whatsappUrl("Olá! Queria saber o valor de um serviço.")}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="kb-btn kb-btn-whats kb-btn-sm kb-focus mt-5 self-start"
+                >
+                  <WhatsApp size={16} /> Perguntar
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ───────── Trabalhos ───────── */}
+        <section
+          id="trabalhos"
+          className="kb-section scroll-mt-16 border-t border-white/10 bg-[#0f0f0f]"
+        >
+          <div className="kb-container">
+            <SectionTitle
+              eyebrow="Trabalhos"
+              title="Cortes feitos na casa"
+              description="Fotos de clientes atendidos na King's Barber."
+            />
+            <FilterTabs
+              options={["Todos", "Degradê", "Tranças", "Clássicos", "Texturas"]}
               active={workCategory}
               onChange={(value) => setWorkCategory(value as WorkCategory)}
             />
-            <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+            <div className="mt-8 grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
               {filteredGallery.map((work, index) => (
-                <article
+                <button
                   key={work.src}
-                  className={`group relative overflow-hidden rounded-[14px] border border-white/10 bg-[#0e0e10] ${
-                    index % 5 === 0 ? "sm:row-span-2" : ""
-                  }`}
+                  type="button"
+                  onClick={() => setLightboxIndex(index)}
+                  className="kb-focus group relative overflow-hidden rounded-md bg-[#121212] text-left"
+                  aria-label={`Ampliar foto: ${work.title}`}
                 >
                   <img
                     src={work.src}
                     alt={work.alt}
                     loading="lazy"
-                    className={`w-full object-cover transition-transform duration-700 group-hover:scale-[1.04] ${
-                      index % 5 === 0 ? "h-full min-h-[360px] sm:min-h-[520px]" : "aspect-[4/5]"
-                    }`}
+                    className="aspect-[4/5] w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/65 to-transparent p-4 pt-16 sm:p-6 sm:pt-24">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#c9a24a]">
-                      {work.category}
-                    </p>
-                    <h3 className="mt-1.5 text-sm font-semibold text-[#f4f0e8] sm:text-base">
-                      {work.title}
-                    </h3>
-                  </div>
-                </article>
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-3 pt-10 text-[13px] font-semibold text-white">
+                    {work.title}
+                  </span>
+                </button>
               ))}
+            </div>
+            <div className="mt-10 text-center">
+              <a
+                href={brand.instagram.url}
+                target="_blank"
+                rel="noreferrer"
+                className="kb-btn kb-btn-outline kb-focus"
+              >
+                <Instagram size={18} /> Ver mais no Instagram
+              </a>
             </div>
           </div>
         </section>
 
-        <section id="produtos" className="kb-section scroll-mt-[76px]">
-          <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
-            <SectionHeading
-              title="Cuidados que prolongam o resultado."
-              description="O que usamos na cadeira e recomendamos para manter o corte em pé até a próxima visita."
+        {/* ───────── Como agendar ───────── */}
+        <section className="kb-section">
+          <div className="kb-container">
+            <SectionTitle eyebrow="Agendamento" title="Como agendar" />
+            <ol
+              className="mx-auto mt-12 grid max-w-4xl gap-px overflow-hidden rounded-md border border-white/10 bg-white/10 sm:grid-cols-3"
+              data-reveal
+            >
+              {[
+                {
+                  title: "Escolha o serviço",
+                  text: "Preço e duração aparecem antes de você seguir.",
+                },
+                {
+                  title: "Barbeiro e horário",
+                  text: "Só aparecem os horários livres de cada profissional.",
+                },
+                {
+                  title: "Confirme",
+                  text: "Entre ou crie sua conta. O horário fica no seu histórico.",
+                },
+              ].map((step, index) => (
+                <li key={step.title} className="bg-[#0b0b0b] p-6 text-center sm:p-8">
+                  <span className="kb-editorial text-4xl text-[#c9a24a]">{index + 1}</span>
+                  <h3 className="mt-3 text-[15px] font-semibold text-[#f2efe9]">{step.title}</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-[#a3a09a]">{step.text}</p>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-10 text-center">
+              <Link to="/agendar" className="kb-btn kb-btn-gold kb-focus">
+                <CalendarDays size={17} /> Agendar agora
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ───────── Produtos ───────── */}
+        <section
+          id="produtos"
+          className="kb-section scroll-mt-16 border-t border-white/10 bg-[#0f0f0f]"
+        >
+          <div className="kb-container">
+            <SectionTitle
+              eyebrow="Produtos"
+              title="À venda na barbearia"
+              description="Os mesmos produtos que usamos na cadeira. Disponíveis no balcão."
             />
-            <div className="mt-8 grid gap-4 sm:mt-14 sm:grid-cols-2 lg:grid-cols-4">
+            <div
+              className="mx-auto mt-12 grid max-w-5xl gap-3 sm:grid-cols-2 lg:grid-cols-4"
+              data-reveal
+            >
               {products.map((product) => (
-                <article
-                  key={product.name}
-                  className="group flex min-h-[270px] flex-col rounded-2xl border border-white/10 bg-[#0e0e10] p-6 transition duration-300 hover:-translate-y-1 hover:border-[#c9a24a]/35 hover:bg-[#19191c]"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="kb-eyebrow !text-[9px]">{product.category}</span>
-                    <PackageOpen size={18} className="text-[#c9a24a]" />
-                  </div>
-                  <h3 className="mt-7 text-[15px] font-semibold text-[#f4f0e8]">{product.name}</h3>
-                  <p className="mt-3 flex-1 text-[13px] leading-relaxed text-[#a7a7aa]">
-                    {product.description}
+                <article key={product.name} className="kb-card flex flex-col p-5">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a3a09a]">
+                    {product.category}
                   </p>
-                  <div className="mt-6 border-t border-white/10 pt-5">
-                    <p className="text-lg font-semibold text-[#f4f0e8]">{product.price}</p>
+                  <h3 className="mt-2 text-[15px] font-semibold text-[#f2efe9]">{product.name}</h3>
+                  <p className="mt-1 text-[13px] text-[#a3a09a]">{product.detail}</p>
+                  <div className="mt-auto flex items-end justify-between pt-5">
+                    <p className="text-lg font-semibold tabular-nums text-[#f2efe9]">
+                      {product.price}
+                    </p>
                     <p
-                      className={`mt-1 text-[11px] ${
-                        product.stock === "Indisponível" ? "text-[#a7a7aa]/60" : "text-[#c9a24a]"
+                      className={`text-[12px] font-semibold ${
+                        product.stock === "Indisponível"
+                          ? "text-[#a3a09a]/70"
+                          : product.stock === "Últimas unidades"
+                            ? "text-[#e8b26a]"
+                            : "text-[#6fcf97]"
                       }`}
                     >
                       {product.stock}
@@ -693,182 +610,99 @@ function LandingPage() {
           </div>
         </section>
 
-        <section id="localizacao" className="kb-section scroll-mt-[76px]">
-          <div className="mx-auto grid max-w-[1280px] gap-14 px-5 sm:px-8 lg:grid-cols-[0.95fr_1fr] lg:gap-20">
-            <div className="flex flex-col justify-center">
-              <SectionHeading title="Onde a coroa espera por você." />
-              <div className="mt-10 space-y-6">
-                <div className="flex items-start gap-3.5">
-                  <MapPin size={17} className="mt-0.5 shrink-0 text-[#c9a24a]" />
-                  <div>
-                    <p className="text-[15.5px] text-[#f4f0e8]">Rua Nelson Mandela, 119</p>
-                    <p className="mt-1 text-sm text-[#a7a7aa]">
-                      Venha viver a experiência King's Barber.
-                    </p>
-                  </div>
-                </div>
-                <a
-                  href="https://www.instagram.com/kiingsbarberr/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="kb-focus inline-flex items-center gap-2.5 text-[15px] text-[#a7a7aa] transition-colors hover:text-[#e2c16b]"
-                >
-                  <Instagram size={17} className="text-[#c9a24a]" /> @kiingsbarberr
-                </a>
-              </div>
-              <Link to="/agendar" className="kb-btn kb-btn-gold kb-focus mt-12 self-start">
-                Agendar horário <ArrowRight size={16} />
-              </Link>
-            </div>
-            <ImageFrame
-              src="/kings-barber/02-capa-video-atendimento.jpg"
-              alt="Interior da King's Barber: entrada, prateleira e cadeira de atendimento"
-              className="aspect-[3/4]"
-              imageClassName="object-[50%_26%]"
-            />
+        {/* ───────── Contato ───────── */}
+        <section id="contato" className="kb-section scroll-mt-16">
+          <div className="kb-container">
+            <SectionTitle eyebrow="Contato" title="Endereço e horários" />
+            <ContactBlock />
           </div>
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-white/10 bg-[#050505] pb-24 pt-12 sm:pb-12">
-        <div className="mx-auto grid max-w-[1280px] gap-10 px-5 sm:px-8 md:grid-cols-[1fr_auto_auto] md:items-start md:gap-16">
-          <div>
-            <img
-              src="/kings-barber-logo-light.png"
-              alt="King's Barber"
-              className="h-14 w-auto object-contain object-left"
-            />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#a7a7aa]">
-              Aqui todo cliente é rei. Tradição, estilo e excelência em cada detalhe.
-            </p>
-          </div>
-          <nav className="grid gap-3 text-sm text-[#a7a7aa]" aria-label="Navegação do rodapé">
-            {navigation.map(([label, href]) => (
-              <a key={href} href={href} className="transition hover:text-[#f4f0e8]">
-                {label}
-              </a>
-            ))}
-          </nav>
-          <div className="space-y-3 text-sm text-[#a7a7aa]">
-            <p className="flex items-center gap-2">
-              <MapPin size={14} className="text-[#c9a24a]" /> Rua Nelson Mandela, 119
-            </p>
-            <a
-              href="https://www.instagram.com/kiingsbarberr/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 transition hover:text-[#e2c16b]"
-            >
-              <Instagram size={14} className="text-[#c9a24a]" /> @kiingsbarberr
-            </a>
-            <Link
-              to="/login"
-              search={{ redirect: undefined, mode: "login" }}
-              className="block pt-3 text-xs transition hover:text-[#f4f0e8]"
-            >
-              Área da equipe
-            </Link>
-          </div>
-        </div>
-        <div className="mx-auto mt-10 flex max-w-[1280px] flex-col gap-2 border-t border-white/8 px-5 pt-6 text-[11px] uppercase tracking-[0.14em] text-[#a7a7aa]/60 sm:px-8 md:flex-row md:items-center md:justify-between">
-          <span>© {new Date().getFullYear()} King's Barber</span>
-          <span>Tradição, estilo e excelência</span>
-        </div>
-      </footer>
+      <SiteFooter />
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#050505]/94 p-3 backdrop-blur-xl sm:hidden">
-        <Link to="/agendar" className="kb-btn kb-btn-gold kb-focus w-full">
-          Agendar horário <ArrowRight size={16} />
+      <div className="hidden sm:block">
+        <WhatsAppFab />
+      </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-[1fr_auto] gap-2 border-t border-white/10 bg-[#0b0b0b]/95 p-3 backdrop-blur sm:hidden">
+        <Link to="/agendar" className="kb-btn kb-btn-gold kb-focus !h-12">
+          Agendar horário
         </Link>
+        <a
+          href={whatsappUrl()}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Falar no WhatsApp"
+          className="kb-btn kb-btn-whats kb-focus !h-12 !px-4"
+        >
+          <WhatsApp size={20} />
+        </a>
+      </div>
+
+      {lightboxIndex !== null ? (
+        <Lightbox
+          items={filteredGallery}
+          index={lightboxIndex}
+          onChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/* ───────────────────────── Peças ───────────────────────── */
+
+function InfoCell({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-4 px-5 py-4">
+      <span className="text-[#c9a24a]">{icon}</span>
+      <div>
+        <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a3a09a]">
+          {label}
+        </dt>
+        <dd className="mt-0.5 text-sm font-semibold text-[#f2efe9]">{children}</dd>
       </div>
     </div>
   );
 }
 
-function UpcomingAppointmentCard({ appointment }: { appointment: AppointmentRecord }) {
+function UpcomingAppointment({ appointment }: { appointment: AppointmentRecord }) {
   const date = appointmentDate(appointment);
   const dateLabel = Number.isNaN(date.getTime())
     ? appointment.appointment_date || "Data a confirmar"
     : format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
 
   return (
-    <article className="kb-hero-reveal mt-7 max-w-xl rounded-2xl border border-[#c9a24a]/35 bg-[#c9a24a]/[0.07] p-5 [animation-delay:210ms] sm:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#e2c16b]">
-            <CheckCircle2 size={14} /> Seu próximo horário
-          </p>
-          <h2 className="mt-3 text-xl font-semibold text-[#f4f0e8] sm:text-2xl">
-            {appointment.service}
-          </h2>
-          <p className="mt-1 text-sm text-[#a7a7aa]">com {appointment.barber}</p>
-        </div>
-        <span className="rounded-full border border-[#c9a24a]/35 bg-[#c9a24a]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#e2c16b]">
-          {appointment.status}
-        </span>
-      </div>
-
-      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/10 pt-4 text-sm text-[#d6d2ca]">
-        <span className="flex items-center gap-2 capitalize">
-          <CalendarDays size={15} className="text-[#c9a24a]" /> {dateLabel}
-        </span>
-        <span className="flex items-center gap-2">
-          <Clock3 size={15} className="text-[#c9a24a]" /> {appointment.time}
-        </span>
-      </div>
-
-      <div className="mt-5 flex flex-wrap items-center gap-4">
-        <Link
-          to="/agendar"
-          className="kb-focus inline-flex items-center gap-2 text-xs font-semibold text-[#e2c16b] transition hover:text-[#f4f0e8]"
-        >
-          Agendar outro horário <ArrowRight size={14} />
-        </Link>
-        <Link
-          to="/client/history"
-          className="kb-focus text-xs font-semibold text-[#a7a7aa] transition hover:text-[#f4f0e8]"
-        >
-          Ver histórico
-        </Link>
-      </div>
-    </article>
-  );
-}
-
-function appointmentDate(appointment: AppointmentRecord) {
-  if (appointment.starts_at) return new Date(appointment.starts_at);
-  const [year, month, day] = (appointment.appointment_date || "").split("-").map(Number);
-  const [hours, minutes] = appointment.time.split(":").map(Number);
-  return new Date(year, month - 1, day, hours, minutes);
-}
-
-function SectionHeading({ title, description }: { title: string; description?: string }) {
-  return (
-    <div>
-      <div className="kb-rule w-24" />
-      <h2 className="kb-editorial mt-5 text-[clamp(2.15rem,6vw,3.6rem)] sm:mt-8">{title}</h2>
-      {description && (
-        <p className="mt-4 max-w-xl text-[14.5px] leading-relaxed text-[#a7a7aa] sm:mt-5 sm:text-[15.5px]">
-          {description}
+    <div className="kb-hero-reveal mx-auto mt-8 flex max-w-xl flex-col gap-3 rounded-md border border-[#c9a24a]/40 bg-[#c9a24a]/[0.07] p-4 text-left [animation-delay:360ms] sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#c9a24a]">
+          Seu próximo horário
         </p>
-      )}
+        <p className="mt-1 text-sm font-semibold text-[#f2efe9]">
+          {appointment.service} com {appointment.barber}
+        </p>
+        <p className="capitalize-first text-[13px] text-[#a3a09a]">
+          {dateLabel} às {appointment.time}
+        </p>
+      </div>
+      <Link to="/client/history" className="kb-btn kb-btn-outline kb-btn-sm kb-focus shrink-0">
+        Ver detalhes
+      </Link>
     </div>
   );
 }
 
-function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
-  return (
-    <article className="h-full bg-[#0e0e10] p-4 sm:p-6">
-      <span className="text-[#c9a24a]">{icon}</span>
-      <h3 className="mt-3 text-[14px] font-semibold text-[#f4f0e8] sm:mt-5 sm:text-[14.5px]">
-        {title}
-      </h3>
-      <p className="mt-2.5 text-[13px] leading-relaxed text-[#a7a7aa]">{text}</p>
-    </article>
-  );
-}
-
-function FilterRow({
+function FilterTabs({
   options,
   active,
   onChange,
@@ -878,47 +712,233 @@ function FilterRow({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="kb-no-scrollbar mt-8 flex gap-2 overflow-x-auto pb-1 sm:mt-12">
+    <div
+      role="group"
+      aria-label="Filtrar trabalhos"
+      className="kb-no-scrollbar mx-auto mt-8 flex max-w-full justify-start gap-6 overflow-x-auto border-b border-white/10 sm:justify-center"
+    >
       {options.map((option) => (
         <button
           key={option}
           type="button"
           onClick={() => onChange(option)}
-          className={`kb-focus shrink-0 rounded-full border px-4 py-2 text-xs transition-colors ${
-            active === option
-              ? "border-[#c9a24a] bg-[#c9a24a] text-[#131007]"
-              : "border-white/12 text-[#a7a7aa] hover:border-white/25 hover:text-[#f4f0e8]"
-          }`}
           aria-pressed={active === option}
+          className={`kb-focus relative shrink-0 pb-3 text-[13px] font-semibold uppercase tracking-[0.1em] transition-colors ${
+            active === option ? "text-[#f2efe9]" : "text-[#a3a09a] hover:text-[#f2efe9]"
+          }`}
         >
           {option}
+          <span
+            className={`absolute inset-x-0 -bottom-px h-[2px] bg-[#c9a24a] transition-transform duration-300 ${
+              active === option ? "scale-x-100" : "scale-x-0"
+            }`}
+          />
         </button>
       ))}
     </div>
   );
 }
 
-function ImageFrame({
-  src,
-  alt,
-  className,
-  imageClassName = "",
+function Lightbox({
+  items,
+  index,
+  onChange,
+  onClose,
 }: {
-  src: string;
-  alt: string;
-  className: string;
-  imageClassName?: string;
+  items: typeof gallery;
+  index: number;
+  onChange: (index: number) => void;
+  onClose: () => void;
 }) {
+  const touchStart = useRef<number | null>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const item = items[index];
+  const go = useCallback(
+    (direction: 1 | -1) => onChange((index + direction + items.length) % items.length),
+    [index, items.length, onChange],
+  );
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "ArrowRight") go(1);
+      if (event.key === "ArrowLeft") go(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [go, onClose]);
+
+  if (!item) return null;
+
+  const navButton =
+    "kb-focus absolute top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20";
+
   return (
     <div
-      className={`group overflow-hidden rounded-[20px] border border-white/10 bg-black ${className}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Foto ${index + 1} de ${items.length}: ${item.title}`}
+      className="kb-lightbox fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 p-4"
+      onClick={onClose}
+      onTouchStart={(event) => {
+        touchStart.current = event.touches[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(event) => {
+        if (touchStart.current === null) return;
+        const delta = (event.changedTouches[0]?.clientX ?? 0) - touchStart.current;
+        if (Math.abs(delta) > 50) go(delta < 0 ? 1 : -1);
+        touchStart.current = null;
+      }}
     >
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        className={`h-full w-full object-cover transition-transform duration-1000 group-hover:scale-[1.025] ${imageClassName}`}
-      />
+      <button
+        ref={closeRef}
+        type="button"
+        aria-label="Fechar"
+        onClick={onClose}
+        className="kb-focus absolute right-4 top-4 z-10 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+      >
+        <X size={20} />
+      </button>
+
+      <figure
+        className="flex max-h-full w-full max-w-3xl flex-col items-center"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <img
+          key={item.src}
+          src={item.src}
+          alt={item.alt}
+          className="kb-lightbox-img max-h-[78vh] w-auto max-w-full rounded-md object-contain"
+        />
+        <figcaption className="mt-4 text-center text-sm text-[#cfcac1]">
+          {item.title}{" "}
+          <span className="text-[#a3a09a]">
+            · {index + 1} de {items.length}
+          </span>
+        </figcaption>
+      </figure>
+
+      <button
+        type="button"
+        aria-label="Foto anterior"
+        onClick={(event) => {
+          event.stopPropagation();
+          go(-1);
+        }}
+        className={`${navButton} left-3 sm:left-6`}
+      >
+        <ChevronLeft size={22} />
+      </button>
+      <button
+        type="button"
+        aria-label="Próxima foto"
+        onClick={(event) => {
+          event.stopPropagation();
+          go(1);
+        }}
+        className={`${navButton} right-3 sm:right-6`}
+      >
+        <ChevronRight size={22} />
+      </button>
     </div>
   );
+}
+
+function ContactBlock() {
+  const status = useOpenStatus();
+  const todayRow = status ? (status.weekday === 0 ? 2 : status.weekday === 6 ? 1 : 0) : -1;
+
+  return (
+    <div
+      className="mx-auto mt-12 grid max-w-5xl overflow-hidden rounded-md border border-white/10 md:grid-cols-2"
+      data-reveal
+    >
+      <div className="bg-[#121212] p-6 sm:p-10">
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#a3a09a]">Endereço</p>
+        <p className="mt-2 text-xl font-semibold text-[#f2efe9]">{brand.address.full}</p>
+        <a
+          href={mapsSearchUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="kb-focus kb-link mt-2 inline-flex items-center gap-1.5 text-sm text-[#c9a24a]"
+        >
+          Abrir no Google Maps <ArrowRight size={14} />
+        </a>
+
+        <div className="mt-8 flex items-center justify-between gap-3">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#a3a09a]">Horários</p>
+          <OpenStatusBadge className="!text-xs" />
+        </div>
+        <table className="mt-3 w-full text-sm">
+          <tbody>
+            {brand.hours.map((row, index) => (
+              <tr
+                key={row.label}
+                className={`border-b border-white/8 ${index === todayRow ? "text-[#f2efe9]" : "text-[#a3a09a]"}`}
+              >
+                <th scope="row" className="py-3 text-left font-normal">
+                  {row.label}
+                  {index === todayRow ? (
+                    <span className="ml-2 text-[11px] font-bold uppercase tracking-[0.1em] text-[#c9a24a]">
+                      hoje
+                    </span>
+                  ) : null}
+                </th>
+                <td className="py-3 text-right font-semibold">{row.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <a
+            href={whatsappUrl()}
+            target="_blank"
+            rel="noreferrer"
+            className="kb-btn kb-btn-whats kb-focus"
+          >
+            <WhatsApp size={18} /> {brand.whatsapp.display}
+          </a>
+          <a
+            href={brand.instagram.url}
+            target="_blank"
+            rel="noreferrer"
+            className="kb-btn kb-btn-outline kb-focus"
+          >
+            <Instagram size={18} /> Instagram
+          </a>
+        </div>
+      </div>
+      <a
+        href={mapsSearchUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="kb-focus group relative block min-h-[320px]"
+        aria-label={`Abrir ${brand.address.full} no Google Maps`}
+      >
+        <img
+          src="/kings-barber/11-corte-com-botox.jpg"
+          alt="Interior da King's Barber"
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover object-[50%_35%] transition-transform duration-700 group-hover:scale-[1.03]"
+        />
+      </a>
+    </div>
+  );
+}
+
+function appointmentDate(appointment: AppointmentRecord) {
+  if (appointment.starts_at) return new Date(appointment.starts_at);
+  const [year, month, day] = (appointment.appointment_date || "").split("-").map(Number);
+  const [hours, minutes] = appointment.time.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes);
 }

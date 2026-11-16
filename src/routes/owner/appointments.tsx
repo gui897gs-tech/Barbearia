@@ -8,7 +8,7 @@ import {
   Plus,
   Search,
   Trash2,
-} from "lucide-react";
+} from "@/components/icons";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";

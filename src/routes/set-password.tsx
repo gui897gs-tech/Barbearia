@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { KeyRound, Loader2 } from "lucide-react";
+import { KeyRound, Loader2 } from "@/components/icons";
 import { FormEvent, useEffect, useState } from "react";
 import kingsBarberLogo from "@/assets/kings-barber-logo.png";
 import { getRoleHome, getUserRole, useAuth } from "@/features/auth/auth-context";

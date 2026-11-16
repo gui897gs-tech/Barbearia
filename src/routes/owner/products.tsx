@@ -9,7 +9,15 @@ import {
   recordProductSale,
   saveProduct,
 } from "@/data/repositories/business-repository";
-import { Package, Plus, AlertTriangle, ShoppingCart, Trash2, X, ImagePlus } from "lucide-react";
+import {
+  Package,
+  Plus,
+  AlertTriangle,
+  ShoppingCart,
+  Trash2,
+  X,
+  ImagePlus,
+} from "@/components/icons";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 import { uploadProductImage } from "@/shared/images/product-image";
 

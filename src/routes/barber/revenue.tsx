@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { endOfMonth, format, isWithinInterval, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DollarSign, Loader2, ReceiptText, Wallet } from "lucide-react";
+import { DollarSign, Loader2, ReceiptText, Wallet } from "@/components/icons";
 import { useEffect } from "react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { KbChart } from "@/components/charts/kb-chart";
 import { AppShell, PageHeader, StatCard } from "@/components/layout/app-shell";
 import { AppointmentRecord } from "@/data/repositories/business-repository";
 import { useBarberWorkspace } from "@/features/barber/use-barber-workspace";
@@ -114,35 +114,14 @@ function RevenueChart({
       </div>
       {data.some((item) => item.revenue > 0) ? (
         <div className="h-72">
-          <ResponsiveContainer>
-            <BarChart data={data}>
-              <CartesianGrid stroke="var(--border)" vertical={false} />
-              <XAxis
-                dataKey={dataKey}
-                stroke="var(--muted-foreground)"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="var(--muted-foreground)"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                width={52}
-              />
-              <Tooltip
-                formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{
-                  background: "var(--popover)",
-                  color: "var(--popover-foreground)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 12,
-                }}
-              />
-              <Bar dataKey="revenue" fill="var(--gold)" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <KbChart
+            kind="bar"
+            data={data}
+            xKey={dataKey as "label"}
+            yKey="revenue"
+            seriesLabel="Faturamento"
+            formatValue={formatCurrency}
+          />
         </div>
       ) : (
         <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">

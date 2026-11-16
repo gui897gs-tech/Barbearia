@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { addDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, Check, Clock, Loader2, RefreshCw, Star } from "lucide-react";
+import { AlertTriangle, Check, Clock, Loader2, RefreshCw, Star } from "@/components/icons";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { formatCurrency } from "@/shared/utils/format";

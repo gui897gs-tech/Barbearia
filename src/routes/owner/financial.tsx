@@ -1,17 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { endOfMonth, format, isWithinInterval, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { DollarSign, Download, Loader2, Package, ReceiptText, Wallet } from "lucide-react";
+import { DollarSign, Download, Loader2, Package, ReceiptText, Wallet } from "@/components/icons";
 import { useEffect } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { KbChart } from "@/components/charts/kb-chart";
 import { AppShell, PageHeader, StatCard } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { AppointmentRecord, EmployeeRecord } from "@/data/repositories/business-repository";
@@ -109,47 +101,14 @@ function OwnerFinancial() {
             </div>
             {chartData.some((item) => item.revenue > 0) ? (
               <div className="h-80">
-                <ResponsiveContainer>
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="owner-financial-revenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="var(--border)" vertical={false} />
-                    <XAxis
-                      dataKey="month"
-                      stroke="var(--muted-foreground)"
-                      fontSize={10}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="var(--muted-foreground)"
-                      fontSize={10}
-                      tickLine={false}
-                      axisLine={false}
-                      width={58}
-                    />
-                    <Tooltip
-                      formatter={(value) => formatCurrency(Number(value))}
-                      contentStyle={{
-                        background: "var(--popover)",
-                        color: "var(--popover-foreground)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="var(--gold)"
-                      strokeWidth={2.5}
-                      fill="url(#owner-financial-revenue)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <KbChart
+                  kind="area"
+                  data={chartData}
+                  xKey="month"
+                  yKey="revenue"
+                  seriesLabel="Receita"
+                  formatValue={formatCurrency}
+                />
               </div>
             ) : (
               <Empty text="Ainda não há receita concluída para exibir." />

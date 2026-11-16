@@ -22,7 +22,7 @@ import {
   Star,
   Trash2,
   X,
-} from "lucide-react";
+} from "@/components/icons";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
 import { formatCurrency, isCompletedStatus } from "@/shared/utils/format";
 import { uploadProfileImage } from "@/shared/images/profile-image";

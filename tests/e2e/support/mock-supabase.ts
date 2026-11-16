@@ -196,7 +196,10 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
       return;
     }
 
-    if (pathname === "/rest/v1/rpc/book_appointment") {
+    if (
+      pathname === "/rest/v1/rpc/book_appointment" ||
+      pathname === "/rest/v1/rpc/book_public_appointment"
+    ) {
       const input = postData(request.postData());
       const selectedService =
         services.find((item) => item.id === input.p_service_id) ?? services[0];

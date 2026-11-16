@@ -8,7 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/features/auth/auth-context";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { ArrowLeft, RefreshCw } from "@/components/icons";
 import { ThemeProvider, themeInitScript } from "@/features/theme/theme-provider";
 import kingsBarberLogo from "@/assets/kings-barber-logo.png";
 
@@ -16,19 +17,17 @@ import appCss from "../styles/globals.css?url";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center luxury-bg px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-gradient-gold">404</h1>
-        <h2 className="mt-4 text-xl font-semibold">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Esta página não existe ou foi movida.</p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-xl gradient-gold px-5 py-2.5 text-sm font-medium text-primary-foreground gold-glow"
-          >
-            Voltar ao início
-          </Link>
-        </div>
+    <div className="kb-site grid min-h-screen place-items-center px-5">
+      <div className="flex max-w-md flex-col items-center text-center">
+        <img src="/kings-barber-logo-light.png" alt="King's Barber" className="h-16 w-auto" />
+        <p className="kb-editorial mt-8 text-7xl text-[#c9a24a]">404</p>
+        <h1 className="mt-3 text-2xl font-semibold text-[#f2efe9]">Página não encontrada</h1>
+        <p className="mt-3 text-sm leading-relaxed text-[#a9a6a0]">
+          A página que você procurou não existe ou mudou de lugar.
+        </p>
+        <Link to="/" className="kb-btn kb-btn-gold kb-focus mt-8">
+          <ArrowLeft size={16} /> Voltar ao início
+        </Link>
       </div>
     </div>
   );
@@ -37,18 +36,24 @@ function NotFoundComponent() {
 function ErrorComponent({ error: _error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   return (
-    <div className="flex min-h-screen items-center justify-center luxury-bg px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold">Algo deu errado</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Tente novamente em instantes.</p>
+    <div className="kb-site grid min-h-screen place-items-center px-5">
+      <div className="flex max-w-md flex-col items-center text-center">
+        <img src="/kings-barber-logo-light.png" alt="King's Barber" className="h-16 w-auto" />
+        <h1 className="mt-8 text-2xl font-semibold text-[#f2efe9]">
+          Não foi possível abrir esta página
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-[#a9a6a0]">
+          Tivemos um problema ao abrir esta tela. Tente novamente em instantes.
+        </p>
         <button
+          type="button"
           onClick={() => {
             router.invalidate();
             reset();
           }}
-          className="mt-6 inline-flex items-center justify-center rounded-xl gradient-gold px-5 py-2.5 text-sm font-medium text-primary-foreground"
+          className="kb-btn kb-btn-gold kb-focus mt-8"
         >
-          Tentar novamente
+          <RefreshCw size={16} /> Tentar novamente
         </button>
       </div>
     </div>
@@ -101,7 +106,7 @@ function RootComponent() {
       <ThemeProvider>
         <AuthProvider>
           <Outlet />
-          <Toaster position="bottom-right" richColors closeButton />
+          <Toaster />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

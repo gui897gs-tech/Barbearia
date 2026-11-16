@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { History, Loader2, Scissors } from "lucide-react";
+import { History, Loader2, Scissors } from "@/components/icons";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader, StatCard } from "@/components/layout/app-shell";
 import { useBarberWorkspace } from "@/features/barber/use-barber-workspace";

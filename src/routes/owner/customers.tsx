@@ -18,8 +18,8 @@ import {
   X,
   Phone,
   Mail,
-  type LucideIcon,
-} from "lucide-react";
+  type IconComponent,
+} from "@/components/icons";
 import {
   Customer,
   CustomerInput,
@@ -380,7 +380,7 @@ function CustomerMetricCard({
   value: string;
   delta: string;
   desc: string;
-  icon: LucideIcon;
+  icon: IconComponent;
 }) {
   return (
     <div className="glass-card rounded-2xl p-5 transition hover:-translate-y-0.5 hover:gold-glow">
@@ -1010,7 +1010,7 @@ function IconButton({
   onClick,
 }: {
   title: string;
-  icon: LucideIcon;
+  icon: IconComponent;
   onClick: () => void;
 }) {
   return (
@@ -1031,7 +1031,7 @@ function DrawerAction({
   onClick,
 }: {
   label: string;
-  icon: LucideIcon;
+  icon: IconComponent;
   onClick?: () => void;
 }) {
   return (
@@ -1054,7 +1054,7 @@ function DrawerBlock({ title, children }: { title: string; children: React.React
   );
 }
 
-function InfoRow({ icon: Icon, value }: { icon: LucideIcon; value: string }) {
+function InfoRow({ icon: Icon, value }: { icon: IconComponent; value: string }) {
   return (
     <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
       <Icon className="h-4 w-4 text-gold" />
