@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Clock3,
   Loader2,
+  Phone,
   Play,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -20,7 +21,12 @@ import {
 } from "@/data/repositories/business-repository";
 import { useBarberWorkspace } from "@/features/barber/use-barber-workspace";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
-import { formatCurrency, formatDateKey, isCancelledStatus } from "@/shared/utils/format";
+import {
+  formatCurrency,
+  formatDateKey,
+  formatPhoneNumber,
+  isCancelledStatus,
+} from "@/shared/utils/format";
 
 export const Route = createFileRoute("/barber/schedule")({
   head: () => ({ meta: [{ title: "Agenda — King's Barber" }] }),
@@ -175,6 +181,17 @@ function AppointmentCard({
           <StatusBadge status={appointment.status} />
         </div>
         <p className="text-sm text-muted-foreground">{appointment.service}</p>
+        {appointment.client_phone ? (
+          <a
+            href={`https://wa.me/${appointment.client_phone.length <= 11 ? "55" : ""}${appointment.client_phone}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-gold hover:underline"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            {formatPhoneNumber(appointment.client_phone)}
+          </a>
+        ) : null}
         {appointment.notes ? (
           <p className="mt-2 border-l border-gold/40 pl-3 text-xs text-muted-foreground">
             {appointment.notes}

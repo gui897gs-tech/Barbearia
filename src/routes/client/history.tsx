@@ -67,7 +67,7 @@ function ClientHistoryPage() {
         subtitle="Acompanhe seus próximos horários e atendimentos anteriores."
         action={
           <Link
-            to="/client/book"
+            to="/agendar"
             className="rounded-xl gradient-gold px-4 py-2.5 text-sm font-medium text-primary-foreground gold-glow"
           >
             Novo agendamento
@@ -106,7 +106,7 @@ function ClientHistoryPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    to="/client/book"
+                    to="/agendar"
                     className="rounded-xl border border-[color:var(--gold)]/40 px-3 py-2 text-xs text-gold transition hover:bg-[color:var(--gold)]/10"
                   >
                     Agendar novamente
@@ -137,7 +137,7 @@ function ClientHistoryPage() {
             Assim que você reservar um horário, todos os detalhes aparecerão aqui.
           </p>
           <Link
-            to="/client/book"
+            to="/agendar"
             className="mt-6 rounded-xl gradient-gold px-5 py-2.5 text-sm font-medium text-primary-foreground"
           >
             Escolher um horário

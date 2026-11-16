@@ -48,9 +48,8 @@ const navByRole: Record<string, NavItem[]> = {
     { to: "/barber/profile", label: "Perfil", icon: User2 },
   ],
   client: [
-    { to: "/client", label: "Início", icon: LayoutDashboard },
-    { to: "/client/book", label: "Agendar", icon: Sparkles },
-    { to: "/client/products", label: "Produtos", icon: Package },
+    { to: "/", label: "Início", icon: LayoutDashboard },
+    { to: "/agendar", label: "Agendar", icon: Sparkles },
     { to: "/client/history", label: "Histórico", icon: Clock },
     { to: "/client/profile", label: "Perfil", icon: User2 },
   ],
@@ -114,7 +113,7 @@ export function AppShell({
 
   useEffect(() => {
     if (initialized && !user && pathname.startsWith(`/${role}`)) {
-      navigate({ to: "/login", search: { redirect: pathname } });
+      navigate({ to: "/login", search: { redirect: pathname, mode: "login" } });
     }
   }, [initialized, navigate, pathname, role, user]);
 
@@ -126,7 +125,7 @@ export function AppShell({
 
   async function handleSignOut() {
     await signOut();
-    navigate({ to: "/login", search: { redirect: undefined } });
+    navigate({ to: "/login", search: { redirect: undefined, mode: "login" } });
   }
 
   if (!initialized || !user || userRole !== role) {
@@ -169,8 +168,7 @@ export function AppShell({
 
           <nav className="mt-3 flex-1 space-y-1 pb-5">
             {items.map((it) => {
-              const active =
-                pathname === it.to || (it.to !== `/${role}` && pathname.startsWith(it.to));
+              const active = isNavItemActive(pathname, it.to, role);
               const Icon = it.icon;
               return (
                 <Link
@@ -263,8 +261,7 @@ export function AppShell({
           className="fixed inset-x-3 bottom-3 z-30 flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card/92 p-1.5 shadow-2xl backdrop-blur-xl scrollbar-none lg:hidden"
         >
           {items.map((item) => {
-            const active =
-              pathname === item.to || (item.to !== `/${role}` && pathname.startsWith(item.to));
+            const active = isNavItemActive(pathname, item.to, role);
             const Icon = item.icon;
             return (
               <Link
@@ -283,6 +280,13 @@ export function AppShell({
       </div>
     </div>
   );
+}
+
+function isNavItemActive(pathname: string, target: string, role: string) {
+  if (target === "/" || target === `/${role}`) {
+    return pathname.replace(/\/$/, "") === target.replace(/\/$/, "");
+  }
+  return pathname === target || pathname.startsWith(`${target}/`);
 }
 
 export function PageHeader({

@@ -42,3 +42,6 @@ test-results/
 *.sln
 *.sw?
 .vercel/
+
+# Local Codex/Vercel helper
+.codex-vercel-proxy.mjs

@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Phone,
   Plus,
   Search,
   Trash2,
@@ -19,7 +20,12 @@ import {
 } from "@/data/repositories/business-repository";
 import { AppointmentDialog } from "@/features/appointments/components/appointment-dialog";
 import { notifyError, notifySuccess } from "@/shared/notifications/toast";
-import { formatCurrency, formatDateKey, isCancelledStatus } from "@/shared/utils/format";
+import {
+  formatCurrency,
+  formatDateKey,
+  formatPhoneNumber,
+  isCancelledStatus,
+} from "@/shared/utils/format";
 
 export const Route = createFileRoute("/owner/appointments")({
   head: () => ({ meta: [{ title: "Agendamentos — King's Barber" }] }),
@@ -58,9 +64,12 @@ function AppointmentsPage() {
     return appointments
       .filter((appointment) =>
         query
-          ? [appointment.client, appointment.service, appointment.barber].some((value) =>
-              value.toLocaleLowerCase("pt-BR").includes(query),
-            )
+          ? [
+              appointment.client,
+              appointment.service,
+              appointment.barber,
+              appointment.client_phone ?? "",
+            ].some((value) => value.toLocaleLowerCase("pt-BR").includes(query))
           : true,
       )
       .sort((a, b) => a.time.localeCompare(b.time));
@@ -201,6 +210,17 @@ function AppointmentsPage() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     {appointment.service} · {appointment.barber}
                   </p>
+                  {appointment.client_phone ? (
+                    <a
+                      href={`https://wa.me/${appointment.client_phone.length <= 11 ? "55" : ""}${appointment.client_phone}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-gold hover:underline"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      {formatPhoneNumber(appointment.client_phone)}
+                    </a>
+                  ) : null}
                   {appointment.notes ? (
                     <p className="mt-2 text-xs text-muted-foreground">{appointment.notes}</p>
                   ) : null}

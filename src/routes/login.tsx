@@ -10,9 +10,14 @@ import { isStrongPassword, minimumPasswordLength } from "@/shared/domain/passwor
 type Mode = "login" | "signup";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const mode: Mode | undefined =
+      search.mode === "signup" || search.mode === "login" ? search.mode : undefined;
+    return {
+      redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+      mode,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Entrar - King's Barber" },
@@ -28,9 +33,9 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const { initialized, user } = useAuth();
-  const { redirect } = Route.useSearch();
+  const { redirect, mode: requestedMode } = Route.useSearch();
   const isPasswordSetup = false;
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(requestedMode ?? "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -156,7 +161,7 @@ function LoginPage() {
         return;
       }
 
-      navigate({ to: "/client" });
+      navigate({ to: getSafeRedirect(redirect, "client") || getRoleHome("client") });
       return;
     }
 
@@ -569,6 +574,12 @@ async function createClientAccount({
 
 function getSafeRedirect(redirect: string | undefined, role: "owner" | "barber" | "client") {
   if (!redirect) return undefined;
+
+  if (redirect === "/agendar") return redirect;
+
+  if (role === "client") {
+    return redirect === "/" || redirect.startsWith("/client/") ? redirect : undefined;
+  }
 
   const roleHome = getRoleHome(role);
   return redirect === roleHome || redirect.startsWith(`${roleHome}/`) ? redirect : undefined;

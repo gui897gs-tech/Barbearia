@@ -1,7 +1,12 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { requireClientRole } from "@/features/auth/route-guard";
 
 export const Route = createFileRoute("/client")({
-  beforeLoad: ({ location }) => requireClientRole("client", location.pathname),
+  beforeLoad: async ({ location }) => {
+    await requireClientRole("client", location.pathname);
+    if (location.pathname === "/client" || location.pathname === "/client/") {
+      throw redirect({ to: "/" });
+    }
+  },
   component: Outlet,
 });

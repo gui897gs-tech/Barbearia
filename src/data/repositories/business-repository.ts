@@ -44,6 +44,7 @@ export type AppointmentRecord = (typeof appointmentSeed)[number] & {
   starts_at?: string;
   duration_minutes?: number;
   customer_id?: string;
+  client_phone?: string;
   barber_id?: string;
   service_id?: string;
   notes?: string;
@@ -141,6 +142,7 @@ type AppointmentDatabaseRow = {
   starts_at?: string;
   duration_minutes?: number;
   customer_id?: string;
+  client_phone?: string;
   barber_id?: string;
   service_id?: string;
   notes?: string;
@@ -588,6 +590,17 @@ export type ClientBookingInput = {
   notes?: string;
 };
 
+export type PublicBookingInput = {
+  barber: EmployeeRecord;
+  service: ServiceRecord;
+  date: string;
+  time: string;
+  clientName: string;
+  clientPhone: string;
+  customerId?: string;
+  notes?: string;
+};
+
 export async function getAvailableSlots({
   barberId,
   serviceId,
@@ -675,6 +688,58 @@ export async function bookClientAppointment(input: ClientBookingInput): Promise<
     service_id: input.service.id,
     duration_minutes: input.service.duration,
     notes: input.notes,
+  };
+  return upsertLocal(storageKeys.appointments, appointmentSeed, appointment);
+}
+
+export async function bookPublicAppointment(input: PublicBookingInput): Promise<AppointmentRecord> {
+  const normalizedPhone = input.clientPhone.replace(/\D/g, "");
+
+  if (supabase) {
+    const { data: appointmentId, error } = await supabase.rpc("book_public_appointment", {
+      p_barber_id: input.barber.id,
+      p_service_id: input.service.id,
+      p_date: input.date,
+      p_time: input.time,
+      p_client_name: input.clientName.trim(),
+      p_client_phone: normalizedPhone,
+      p_notes: input.notes?.trim() || null,
+    });
+    if (error) throwRepositoryError("confirmar o agendamento", error);
+
+    return {
+      id: String(appointmentId),
+      time: input.time,
+      client: input.clientName.trim(),
+      client_phone: normalizedPhone,
+      service: input.service.name,
+      barber: input.barber.name,
+      status: "Confirmado",
+      price: input.service.price,
+      appointment_date: input.date,
+      customer_id: input.customerId,
+      barber_id: input.barber.id,
+      service_id: input.service.id,
+      duration_minutes: input.service.duration,
+      notes: input.notes?.trim() || undefined,
+    };
+  }
+
+  const appointment: AppointmentRecord = {
+    id: crypto.randomUUID(),
+    time: input.time,
+    client: input.clientName.trim(),
+    client_phone: normalizedPhone,
+    service: input.service.name,
+    barber: input.barber.name,
+    status: "Confirmado",
+    price: input.service.price,
+    appointment_date: input.date,
+    customer_id: input.customerId,
+    barber_id: input.barber.id,
+    service_id: input.service.id,
+    duration_minutes: input.service.duration,
+    notes: input.notes?.trim() || undefined,
   };
   return upsertLocal(storageKeys.appointments, appointmentSeed, appointment);
 }
@@ -876,6 +941,7 @@ function fromAppointmentRow(row: AppointmentDatabaseRow): AppointmentRecord {
     starts_at: row.starts_at,
     duration_minutes: row.duration_minutes,
     customer_id: row.customer_id,
+    client_phone: row.client_phone,
     barber_id: row.barber_id,
     service_id: row.service_id,
     notes: row.notes,
@@ -892,6 +958,7 @@ function toAppointmentRow(appointment: AppointmentRecord) {
     starts_at: appointment.starts_at || `${appointmentDate}T${appointment.time}:00-03:00`,
     duration_minutes: appointment.duration_minutes ?? 30,
     customer_id: appointment.customer_id,
+    client_phone: appointment.client_phone,
     barber_id: appointment.barber_id,
     service_id: appointment.service_id,
     client_name: appointment.client,

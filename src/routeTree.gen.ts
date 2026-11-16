@@ -14,9 +14,9 @@ import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ClientRouteImport } from './routes/client'
 import { Route as BarberRouteImport } from './routes/barber'
+import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OwnerIndexRouteImport } from './routes/owner/index'
-import { Route as ClientIndexRouteImport } from './routes/client/index'
 import { Route as BarberIndexRouteImport } from './routes/barber/index'
 import { Route as OwnerSettingsRouteImport } from './routes/owner/settings'
 import { Route as OwnerServicesRouteImport } from './routes/owner/services'
@@ -60,6 +60,11 @@ const BarberRoute = BarberRouteImport.update({
   path: '/barber',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgendarRoute = AgendarRouteImport.update({
+  id: '/agendar',
+  path: '/agendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -69,11 +74,6 @@ const OwnerIndexRoute = OwnerIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => OwnerRoute,
-} as any)
-const ClientIndexRoute = ClientIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ClientRoute,
 } as any)
 const BarberIndexRoute = BarberIndexRouteImport.update({
   id: '/',
@@ -163,6 +163,7 @@ const BarberHistoryRoute = BarberHistoryRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agendar': typeof AgendarRoute
   '/barber': typeof BarberRouteWithChildren
   '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
@@ -185,11 +186,12 @@ export interface FileRoutesByFullPath {
   '/owner/services': typeof OwnerServicesRoute
   '/owner/settings': typeof OwnerSettingsRoute
   '/barber/': typeof BarberIndexRoute
-  '/client/': typeof ClientIndexRoute
   '/owner/': typeof OwnerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agendar': typeof AgendarRoute
+  '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
   '/set-password': typeof SetPasswordRoute
   '/barber/history': typeof BarberHistoryRoute
@@ -209,12 +211,12 @@ export interface FileRoutesByTo {
   '/owner/services': typeof OwnerServicesRoute
   '/owner/settings': typeof OwnerSettingsRoute
   '/barber': typeof BarberIndexRoute
-  '/client': typeof ClientIndexRoute
   '/owner': typeof OwnerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agendar': typeof AgendarRoute
   '/barber': typeof BarberRouteWithChildren
   '/client': typeof ClientRouteWithChildren
   '/login': typeof LoginRoute
@@ -237,13 +239,13 @@ export interface FileRoutesById {
   '/owner/services': typeof OwnerServicesRoute
   '/owner/settings': typeof OwnerSettingsRoute
   '/barber/': typeof BarberIndexRoute
-  '/client/': typeof ClientIndexRoute
   '/owner/': typeof OwnerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agendar'
     | '/barber'
     | '/client'
     | '/login'
@@ -266,11 +268,12 @@ export interface FileRouteTypes {
     | '/owner/services'
     | '/owner/settings'
     | '/barber/'
-    | '/client/'
     | '/owner/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agendar'
+    | '/client'
     | '/login'
     | '/set-password'
     | '/barber/history'
@@ -290,11 +293,11 @@ export interface FileRouteTypes {
     | '/owner/services'
     | '/owner/settings'
     | '/barber'
-    | '/client'
     | '/owner'
   id:
     | '__root__'
     | '/'
+    | '/agendar'
     | '/barber'
     | '/client'
     | '/login'
@@ -317,12 +320,12 @@ export interface FileRouteTypes {
     | '/owner/services'
     | '/owner/settings'
     | '/barber/'
-    | '/client/'
     | '/owner/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgendarRoute: typeof AgendarRoute
   BarberRoute: typeof BarberRouteWithChildren
   ClientRoute: typeof ClientRouteWithChildren
   LoginRoute: typeof LoginRoute
@@ -367,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agendar': {
+      id: '/agendar'
+      path: '/agendar'
+      fullPath: '/agendar'
+      preLoaderRoute: typeof AgendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -380,13 +390,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/owner/'
       preLoaderRoute: typeof OwnerIndexRouteImport
       parentRoute: typeof OwnerRoute
-    }
-    '/client/': {
-      id: '/client/'
-      path: '/'
-      fullPath: '/client/'
-      preLoaderRoute: typeof ClientIndexRouteImport
-      parentRoute: typeof ClientRoute
     }
     '/barber/': {
       id: '/barber/'
@@ -534,7 +537,6 @@ interface ClientRouteChildren {
   ClientHistoryRoute: typeof ClientHistoryRoute
   ClientProductsRoute: typeof ClientProductsRoute
   ClientProfileRoute: typeof ClientProfileRoute
-  ClientIndexRoute: typeof ClientIndexRoute
 }
 
 const ClientRouteChildren: ClientRouteChildren = {
@@ -542,7 +544,6 @@ const ClientRouteChildren: ClientRouteChildren = {
   ClientHistoryRoute: ClientHistoryRoute,
   ClientProductsRoute: ClientProductsRoute,
   ClientProfileRoute: ClientProfileRoute,
-  ClientIndexRoute: ClientIndexRoute,
 }
 
 const ClientRouteWithChildren =
@@ -576,6 +577,7 @@ const OwnerRouteWithChildren = OwnerRoute._addFileChildren(OwnerRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgendarRoute: AgendarRoute,
   BarberRoute: BarberRouteWithChildren,
   ClientRoute: ClientRouteWithChildren,
   LoginRoute: LoginRoute,

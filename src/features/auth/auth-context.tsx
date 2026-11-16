@@ -68,7 +68,8 @@ export function getUserRole(user?: User | null): AppRole {
 }
 
 export function getRoleHome(role: AppRole) {
-  return `/${role}` as const;
+  if (role === "client") return "/" as const;
+  return role === "owner" ? ("/owner" as const) : ("/barber" as const);
 }
 
 export function useAuth() {
