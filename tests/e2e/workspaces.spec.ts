@@ -17,7 +17,7 @@ test("owner workspace loads, persists settings and remains responsive", async ({
   await expect(page.getByRole("heading", { name: "Visão geral da barbearia" })).toBeVisible();
   await expect(page.getByText("R$ 55").first()).toBeVisible();
   await expectNoHorizontalOverflow(page);
-  await captureBothThemes(page, testInfo, "owner-workspace");
+  await captureWorkspaceTheme(page, testInfo, "owner-workspace");
 
   await page.goto("/owner/settings");
   await expect(page.getByRole("heading", { name: "Configurações" })).toBeVisible();
@@ -43,7 +43,7 @@ test("barber workspace updates the live appointment state", async ({ page }, tes
 
   await expect(page.getByRole("heading", { name: "Seu dia na cadeira" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
-  await captureBothThemes(page, testInfo, "barber-workspace");
+  await captureWorkspaceTheme(page, testInfo, "barber-workspace");
 
   await page.goto("/barber/schedule");
   await expect(page.getByRole("heading", { name: "Sua agenda" })).toBeVisible();
@@ -92,15 +92,12 @@ test("client completes the booking flow and sees the resulting history", async (
   await expectNoHorizontalOverflow(page);
 });
 
-async function captureBothThemes(page: Page, testInfo: TestInfo, stem: string) {
-  await expect(page.locator("html")).not.toHaveClass(/dark/);
-  await page.screenshot({ path: testInfo.outputPath(`${stem}-light.png`), fullPage: true });
-  await page.getByRole("button", { name: /alterar tema/i }).click();
-  const darkOption = page.getByRole("menuitemradio", { name: /tema escuro/i });
-  await darkOption.click();
-  await expect(darkOption).toBeHidden();
-  await expect(page.locator("html")).toHaveClass(/dark/);
-  await page.screenshot({ path: testInfo.outputPath(`${stem}-dark.png`), fullPage: true });
+async function captureWorkspaceTheme(page: Page, testInfo: TestInfo, stem: string) {
+  const workspace = page.locator(".kb-workspace-bg");
+  await expect(workspace).toBeVisible();
+  await expect(workspace).toHaveClass(/dark/);
+  await expect(page.getByRole("button", { name: /alterar tema/i })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath(`${stem}-black-gold.png`), fullPage: true });
 }
 
 async function openAuthenticatedWorkspace(page: Page, path: "/owner" | "/barber" | "/") {

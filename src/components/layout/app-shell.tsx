@@ -132,12 +132,17 @@ export function AppShell({
 
   async function handleSignOut() {
     await signOut();
-    navigate({ to: "/login", search: { redirect: undefined, mode: "login" } });
+    navigate({ to: "/" });
   }
 
   if (!initialized || !user || userRole !== role) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 luxury-bg px-4 text-sm text-muted-foreground">
+      <div
+        className={cn(
+          "flex min-h-screen flex-col items-center justify-center gap-4 luxury-bg px-4 text-sm text-muted-foreground",
+          role !== "client" && "dark kb-workspace-bg",
+        )}
+      >
         <span className="relative grid h-14 w-14 place-items-center">
           <span className="absolute inset-0 animate-spin rounded-full border-2 border-[color:var(--gold)]/15 border-t-[color:var(--gold)]" />
           <CrownMark size={22} />
@@ -166,7 +171,12 @@ export function AppShell({
     );
 
   return (
-    <div className="flex min-h-screen w-full luxury-bg text-foreground">
+    <div
+      className={cn(
+        "flex min-h-screen w-full luxury-bg text-foreground",
+        role !== "client" && "dark kb-workspace-bg",
+      )}
+    >
       <aside
         aria-label="Navegação principal"
         className={cn(
@@ -321,7 +331,7 @@ export function AppShell({
                   <Calendar size={15} /> Agenda pública
                 </Link>
               ) : null}
-              <ThemeToggle />
+              {role === "client" ? <ThemeToggle /> : null}
               <button
                 type="button"
                 onClick={handleSignOut}

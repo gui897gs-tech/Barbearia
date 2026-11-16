@@ -695,8 +695,8 @@ function UpcomingAppointment({ appointment }: { appointment: AppointmentRecord }
           {dateLabel} às {appointment.time}
         </p>
       </div>
-      <Link to="/client/history" className="kb-btn kb-btn-outline kb-btn-sm kb-focus shrink-0">
-        Ver detalhes
+      <Link to="/agendar" className="kb-btn kb-btn-outline kb-btn-sm kb-focus shrink-0">
+        Novo horário
       </Link>
     </div>
   );

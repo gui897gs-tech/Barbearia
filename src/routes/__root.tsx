@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/features/auth/auth-context";
+import { AuthDialogProvider } from "@/features/auth/auth-dialog";
 import { Toaster } from "@/components/ui/toaster";
 import { ArrowLeft, RefreshCw } from "@/components/icons";
 import { ThemeProvider, themeInitScript } from "@/features/theme/theme-provider";
@@ -105,8 +106,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <Outlet />
-          <Toaster />
+          <AuthDialogProvider>
+            <Outlet />
+            <Toaster />
+          </AuthDialogProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

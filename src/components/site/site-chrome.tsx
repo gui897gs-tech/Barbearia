@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Instagram, LogIn, MapPin, Menu, UserRound, WhatsApp, X } from "@/components/icons";
 import { siteNavigation, useOpenStatus } from "@/components/site/site-hooks";
 import { getRoleHome, useAuth } from "@/features/auth/auth-context";
+import { useAuthDialog } from "@/features/auth/auth-dialog-context";
 import { brand, mapsSearchUrl, whatsappUrl } from "@/shared/brand";
 
 /** Coroa em traço único, usada apenas como selo em estados de carregamento. */
@@ -53,6 +54,7 @@ export function OpenStatusBadge({ className = "" }: { className?: string }) {
 
 export function SiteHeader({ onHome = true }: { onHome?: boolean }) {
   const { initialized, user, role } = useAuth();
+  const { openAuth } = useAuthDialog();
   const [solid, setSolid] = useState(!onHome);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -115,23 +117,24 @@ export function SiteHeader({ onHome = true }: { onHome?: boolean }) {
         <div className="flex items-center gap-2">
           {initialized && user ? (
             <Link
-              to={role === "client" ? "/client/history" : getRoleHome(role)}
-              aria-label={role === "client" ? "Meus horários" : "Meu painel"}
-              title={role === "client" ? "Meus horários" : "Meu painel"}
+              to={getRoleHome(role)}
+              aria-label={role === "client" ? "Minha página inicial" : "Meu painel"}
+              title={role === "client" ? "Minha página inicial" : "Meu painel"}
               className="kb-focus grid h-10 w-10 place-items-center rounded-md text-[#f2efe9] transition hover:bg-white/10"
             >
               <UserRound size={20} />
             </Link>
           ) : (
-            <Link
-              to="/login"
-              search={{ redirect: undefined, mode: "login" }}
+            <button
+              type="button"
+              onClick={() => openAuth("login")}
+              disabled={!initialized}
               aria-label="Entrar ou criar conta"
               title="Entrar ou criar conta"
-              className="kb-focus grid h-10 w-10 place-items-center rounded-md text-[#f2efe9] transition hover:bg-white/10"
+              className="kb-focus grid h-10 w-10 place-items-center rounded-md text-[#f2efe9] transition hover:bg-white/10 disabled:cursor-wait disabled:opacity-60"
             >
               <LogIn size={20} />
-            </Link>
+            </button>
           )}
           <Link
             to="/agendar"
@@ -223,6 +226,7 @@ export function WhatsAppFab({ message }: { message?: string }) {
 /* ───────────────────────── Rodapé ───────────────────────── */
 
 export function SiteFooter({ onHome = true }: { onHome?: boolean }) {
+  const { openAuth } = useAuthDialog();
   const linkClass = "kb-focus transition-colors hover:text-white";
   return (
     <footer className="relative border-t border-white/10 bg-[#0b0b0b] pb-28 pt-14 text-sm text-[#a3a09a] sm:pb-12">
@@ -315,9 +319,9 @@ export function SiteFooter({ onHome = true }: { onHome?: boolean }) {
           <Link to="/agendar" className={linkClass}>
             Agendar
           </Link>
-          <Link to="/login" search={{ redirect: undefined, mode: "login" }} className={linkClass}>
+          <button type="button" onClick={() => openAuth("login")} className={linkClass}>
             Área da equipe
-          </Link>
+          </button>
         </nav>
       </div>
     </footer>

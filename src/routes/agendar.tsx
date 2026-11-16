@@ -34,6 +34,7 @@ import {
   ServiceRecord,
 } from "@/data/repositories/business-repository";
 import { AppRole, getRoleHome, useAuth } from "@/features/auth/auth-context";
+import { useAuthDialog } from "@/features/auth/auth-dialog-context";
 import { supabase } from "@/integrations/supabase/client";
 import { brand, mapsSearchUrl, whatsappUrl } from "@/shared/brand";
 import { findServiceByName } from "@/shared/domain/service-match";
@@ -83,6 +84,7 @@ type BookingDraft = {
 
 function PublicBookingPage() {
   const { initialized, user, role } = useAuth();
+  const { openAuth } = useAuthDialog();
   const { servico: requestedService } = Route.useSearch();
   const bookingDates = useMemo(
     () => Array.from({ length: 14 }, (_, index) => addDays(new Date(), index)),
@@ -641,22 +643,26 @@ function PublicBookingPage() {
                             etapa.
                           </p>
                           <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-                            <Link
-                              to="/login"
-                              search={{ redirect: "/agendar", mode: "login" }}
-                              onClick={saveBookingDraft}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveBookingDraft();
+                                openAuth("login", "/agendar");
+                              }}
                               className="kb-btn kb-btn-gold kb-btn-sm kb-focus"
                             >
                               <LogIn size={16} /> Já tenho conta
-                            </Link>
-                            <Link
-                              to="/login"
-                              search={{ redirect: "/agendar", mode: "signup" }}
-                              onClick={saveBookingDraft}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                saveBookingDraft();
+                                openAuth("signup", "/agendar");
+                              }}
                               className="kb-btn kb-btn-outline kb-btn-sm kb-focus"
                             >
                               <UserRound size={16} /> Criar conta
-                            </Link>
+                            </button>
                           </div>
                         </div>
                       ) : loadingProfile ? (
@@ -907,6 +913,7 @@ function PublicBookingPage() {
 
 function BookingHeader() {
   const { initialized, user, role } = useAuth();
+  const { openAuth } = useAuthDialog();
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0b0b0b]/95 backdrop-blur">
       <div className="kb-container grid h-[72px] grid-cols-[1fr_auto_1fr] items-center gap-3">
@@ -926,22 +933,23 @@ function BookingHeader() {
         <div className="justify-self-end">
           {initialized && user ? (
             <Link
-              to={role === "client" ? "/client/history" : getRoleHome(role)}
+              to={getRoleHome(role)}
               className="kb-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-3 py-2 text-xs font-semibold text-[#f4f0e8] transition hover:border-[#c9a24a]/60 hover:text-[#e6c773]"
             >
               <UserRound size={15} />
               <span className="hidden sm:inline">
-                {role === "client" ? "Meus horários" : "Meu painel"}
+                {role === "client" ? "Página inicial" : "Meu painel"}
               </span>
             </Link>
           ) : (
-            <Link
-              to="/login"
-              search={{ redirect: "/agendar", mode: "login" }}
-              className="kb-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-3 py-2 text-xs font-semibold text-[#f4f0e8] transition hover:border-[#c9a24a]/60 hover:text-[#e6c773]"
+            <button
+              type="button"
+              onClick={() => openAuth("login", "/agendar")}
+              disabled={!initialized}
+              className="kb-focus inline-flex items-center gap-2 rounded-full border border-white/12 px-3 py-2 text-xs font-semibold text-[#f4f0e8] transition hover:border-[#c9a24a]/60 hover:text-[#e6c773] disabled:cursor-wait disabled:opacity-60"
             >
               <LogIn size={15} /> <span className="hidden sm:inline">Entrar</span>
-            </Link>
+            </button>
           )}
         </div>
       </div>
@@ -1443,12 +1451,9 @@ function BookingSuccess({
         </div>
 
         <div className="kb-hero-reveal mt-8 flex flex-col justify-center gap-3 [animation-delay:650ms] sm:flex-row">
-          <Link
-            to={role === "client" ? "/client/history" : getRoleHome(role)}
-            className="kb-btn kb-btn-gold kb-focus"
-          >
+          <Link to={getRoleHome(role)} className="kb-btn kb-btn-gold kb-focus">
             <CheckCircle2 size={17} />
-            {role === "client" ? "Ver meus horários" : "Ir para meu painel"}
+            {role === "client" ? "Ver na página inicial" : "Ir para meu painel"}
           </Link>
           <Link to="/" className="kb-btn kb-btn-outline kb-focus">
             Voltar ao início
