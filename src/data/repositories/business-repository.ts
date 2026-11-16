@@ -392,10 +392,7 @@ export async function updateBarberProfile(
 }
 
 export type BarberAppointmentStatus =
-  | "Confirmado"
-  | "Em atendimento"
-  | "Concluído"
-  | "Não compareceu";
+  "Confirmado" | "Em atendimento" | "Concluído" | "Não compareceu";
 
 export async function updateBarberAppointmentStatus(
   appointmentId: string,
