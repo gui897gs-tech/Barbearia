@@ -57,13 +57,13 @@ test("client completes the booking flow and sees the resulting history", async (
   page,
 }, testInfo) => {
   await installAuthenticatedSupabase(page, "client");
-  await openAuthenticatedWorkspace(page, "/client");
+  await openAuthenticatedWorkspace(page, "/");
 
-  await expect(page.getByRole("heading", { name: "Seu próximo corte começa aqui." })).toBeVisible();
+  // O cliente volta para o site público, que destaca o próximo horário confirmado.
+  await expect(page.getByText("Seu próximo horário")).toBeVisible();
   await expect(page.getByText("Corte Signature com Miguel Reis")).toBeVisible();
-  await expect(page.getByText(/R\$\s*\d/)).toHaveCount(0);
   await expectNoHorizontalOverflow(page);
-  await captureBothThemes(page, testInfo, "client-workspace");
+  await page.screenshot({ path: testInfo.outputPath("client-home.png"), fullPage: true });
 
   await page.goto("/client/book");
   await expect(page.getByRole("heading", { name: "Agende seu horário" })).toBeVisible();
@@ -103,9 +103,9 @@ async function captureBothThemes(page: Page, testInfo: TestInfo, stem: string) {
   await page.screenshot({ path: testInfo.outputPath(`${stem}-dark.png`), fullPage: true });
 }
 
-async function openAuthenticatedWorkspace(page: Page, path: "/owner" | "/barber" | "/client") {
+async function openAuthenticatedWorkspace(page: Page, path: "/owner" | "/barber" | "/") {
   await page.goto("/login");
-  await expect(page).toHaveURL(new RegExp(`${path}/?$`), { timeout: 15_000 });
+  await expect(page).toHaveURL(new RegExp(`${path === "/" ? "" : path}/?$`), { timeout: 15_000 });
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
