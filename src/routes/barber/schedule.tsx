@@ -10,7 +10,7 @@ import {
   Loader2,
   Phone,
   Play,
-} from "lucide-react";
+} from "@/components/icons";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";

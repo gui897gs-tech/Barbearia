@@ -63,7 +63,13 @@ Consulte [docs/supabase/setup.md](docs/supabase/setup.md) para criar o primeiro 
 
 ## Interface e movimento
 
-A interface usa temas claro/escuro/sistema, fontes variáveis auto-hospedadas e GSAP com `prefers-reduced-motion`. Vendure e Saleor serviram como referências de densidade e acabamento, sem introduzir dependências de e-commerce.
+A interface é toda autoral: ícones SVG próprios (`src/components/icons`), botões, campos, interruptor, menu de tema, notificações e gráficos (`src/components/charts/kb-chart.tsx`) sem bibliotecas de componentes ou de ícones. Há temas claro/escuro/sistema, fontes auto-hospedadas e animações discretas que respeitam `prefers-reduced-motion`.
+
+### Dados da marca e contato
+
+Endereço, Instagram, WhatsApp e horários ficam em um único arquivo, `src/shared/brand.ts`, usado pelo site, agendamento, login e rodapé. O número de WhatsApp pode ser definido no deploy pela variável `VITE_WHATSAPP_NUMBER` (somente dígitos, com 55 + DDD).
+
+Os serviços da página inicial levam ao agendamento com o serviço já selecionado (`/agendar?servico=Nome do serviço`), comparando o nome sem acentos com o cadastro do Supabase.
 
 ## Deploy
 

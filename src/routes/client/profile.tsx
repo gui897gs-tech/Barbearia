@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "@/components/icons";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { useAuth } from "@/features/auth/auth-context";
 import { supabase } from "@/integrations/supabase/client";

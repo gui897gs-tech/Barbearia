@@ -1,19 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Download, Loader2, Scissors, TrendingUp, Users } from "lucide-react";
+import { Calendar, Download, Loader2, Scissors, TrendingUp, Users } from "@/components/icons";
 import { useEffect } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { KbChart } from "@/components/charts/kb-chart";
 import { AppShell, PageHeader, StatCard } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { AppointmentRecord } from "@/data/repositories/business-repository";
@@ -98,33 +88,23 @@ function OwnerReports() {
 
           <div className="grid gap-6 xl:grid-cols-2">
             <ChartCard title="Atendimentos nos últimos 7 dias">
-              <BarChart data={weekData}>
-                <ChartGrid />
-                <XAxis {...axisProps} dataKey="day" />
-                <YAxis {...axisProps} />
-                <ChartTooltip />
-                <Bar
-                  dataKey="appointments"
-                  name="Atendimentos"
-                  fill="var(--gold)"
-                  radius={[7, 7, 0, 0]}
-                />
-              </BarChart>
+              <KbChart
+                kind="bar"
+                data={weekData}
+                xKey="day"
+                yKey="appointments"
+                seriesLabel="Atendimentos"
+              />
             </ChartCard>
             <ChartCard title="Faturamento concluído nos últimos 7 dias">
-              <LineChart data={weekData}>
-                <ChartGrid />
-                <XAxis {...axisProps} dataKey="day" />
-                <YAxis {...axisProps} />
-                <ChartTooltip currency />
-                <Line
-                  dataKey="revenue"
-                  name="Faturamento"
-                  stroke="var(--gold)"
-                  strokeWidth={2.5}
-                  dot={{ fill: "var(--gold)", r: 3 }}
-                />
-              </LineChart>
+              <KbChart
+                kind="line"
+                data={weekData}
+                xKey="day"
+                yKey="revenue"
+                seriesLabel="Faturamento"
+                formatValue={formatCurrency}
+              />
             </ChartCard>
           </div>
 
@@ -171,35 +151,11 @@ function OwnerReports() {
   );
 }
 
-const axisProps = {
-  stroke: "var(--muted-foreground)",
-  fontSize: 10,
-  tickLine: false,
-  axisLine: false,
-};
-function ChartGrid() {
-  return <CartesianGrid stroke="var(--border)" vertical={false} />;
-}
-function ChartTooltip({ currency = false }: { currency?: boolean }) {
-  return (
-    <Tooltip
-      formatter={(value) => (currency ? formatCurrency(Number(value)) : Number(value))}
-      contentStyle={{
-        background: "var(--popover)",
-        color: "var(--popover-foreground)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-      }}
-    />
-  );
-}
 function ChartCard({ title, children }: { title: string; children: React.ReactElement }) {
   return (
     <section className="glass-card rounded-2xl p-5 sm:p-6">
       <h2 className="mb-5 font-display text-xl">{title}</h2>
-      <div className="h-72">
-        <ResponsiveContainer>{children}</ResponsiveContainer>
-      </div>
+      <div className="h-72">{children}</div>
     </section>
   );
 }

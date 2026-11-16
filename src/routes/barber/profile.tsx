@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Camera, Loader2, Mail, Phone, Save, Scissors, Star } from "lucide-react";
+import { Camera, Loader2, Mail, Phone, Save, Scissors, Star } from "@/components/icons";
 import { FormEvent, useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";

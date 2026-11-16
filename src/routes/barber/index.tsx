@@ -1,15 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Calendar, DollarSign, Loader2, Star, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, Loader2, Star, TrendingUp } from "@/components/icons";
 import { useEffect, useMemo } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { KbChart } from "@/components/charts/kb-chart";
 import { AppShell, PageHeader, StatCard } from "@/components/layout/app-shell";
 import { useBarberWorkspace } from "@/features/barber/use-barber-workspace";
 import { notifyError } from "@/shared/notifications/toast";
@@ -75,45 +67,14 @@ function BarberDashboard() {
             <section className="glass-card rounded-2xl p-5 sm:p-6 lg:col-span-2">
               <h2 className="mb-4 font-display text-xl">Últimos sete dias</h2>
               <div className="h-64">
-                <ResponsiveContainer>
-                  <AreaChart data={weekData}>
-                    <defs>
-                      <linearGradient id="barber-revenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--gold)" stopOpacity={0.38} />
-                        <stop offset="100%" stopColor="var(--gold)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke="var(--border)" vertical={false} />
-                    <XAxis
-                      dataKey="day"
-                      stroke="var(--muted-foreground)"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="var(--muted-foreground)"
-                      fontSize={11}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <Tooltip
-                      formatter={(value) => formatCurrency(Number(value))}
-                      contentStyle={{
-                        background: "var(--popover)",
-                        color: "var(--popover-foreground)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                      }}
-                    />
-                    <Area
-                      dataKey="revenue"
-                      stroke="var(--gold)"
-                      strokeWidth={2}
-                      fill="url(#barber-revenue)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <KbChart
+                  kind="area"
+                  data={weekData}
+                  xKey="day"
+                  yKey="revenue"
+                  seriesLabel="Faturamento"
+                  formatValue={formatCurrency}
+                />
               </div>
             </section>
 

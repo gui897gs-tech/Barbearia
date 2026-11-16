@@ -17,12 +17,12 @@ export function PageReveal({ routeKey, children }: { routeKey: string; children:
         const timeline = gsap.timeline();
         timeline.fromTo(
           elements,
-          { autoAlpha: 0, y: 8 },
+          { autoAlpha: 0, y: 14 },
           {
             autoAlpha: 1,
             y: 0,
-            duration: 0.24,
-            stagger: 0.02,
+            duration: 0.42,
+            stagger: 0.045,
             ease: "power2.out",
             clearProps: "opacity,visibility,transform",
           },
@@ -47,7 +47,7 @@ export function PageReveal({ routeKey, children }: { routeKey: string; children:
   );
 
   return (
-    <div ref={container} className="mx-auto w-full max-w-[1600px]">
+    <div ref={container} className="mx-auto w-full max-w-[1320px]">
       {children}
     </div>
   );

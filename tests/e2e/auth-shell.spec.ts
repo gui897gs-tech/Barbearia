@@ -18,7 +18,7 @@ test.beforeEach(async ({ page }) => {
 test("login and signup remain usable while the backend is unavailable", async ({ page }) => {
   await page.goto("/login");
 
-  await expect(page.getByRole("heading", { name: "Entre na sua barbearia" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entrar na sua conta" })).toBeVisible();
   await expect(page.locator("body")).toHaveCSS("overflow-x", "hidden");
 
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
@@ -48,7 +48,7 @@ test("login and signup remain usable while the backend is unavailable", async ({
 test("theme choice is persisted", async ({ page }) => {
   await page.goto("/login");
   await page.getByRole("button", { name: /alterar tema/i }).click();
-  await page.getByRole("menuitem", { name: /tema claro/i }).click();
+  await page.getByRole("menuitemradio", { name: /tema claro/i }).click();
   await expect(page.locator("html")).not.toHaveClass(/dark/);
 
   await page.reload();
@@ -61,7 +61,7 @@ test("theme choice is persisted", async ({ page }) => {
 test("protected workspaces redirect unauthenticated visitors", async ({ page }) => {
   await page.goto("/owner");
   await expect(page).toHaveURL(/\/login\?redirect=%2Fowner/);
-  await expect(page.getByRole("heading", { name: "Entre na sua barbearia" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entrar na sua conta" })).toBeVisible();
 });
 
 test("captures the responsive login reference", async ({ page }, testInfo) => {
@@ -69,7 +69,7 @@ test("captures the responsive login reference", async ({ page }, testInfo) => {
   await expect(page.getByRole("button", { name: /alterar tema/i })).toBeEnabled();
   await page.screenshot({ path: testInfo.outputPath("login-light-reference.png"), fullPage: true });
   await page.getByRole("button", { name: /alterar tema/i }).click();
-  const darkOption = page.getByRole("menuitem", { name: /tema escuro/i });
+  const darkOption = page.getByRole("menuitemradio", { name: /tema escuro/i });
   await darkOption.click();
   await expect(darkOption).toBeHidden();
   await expect(page.locator("html")).toHaveClass(/dark/);

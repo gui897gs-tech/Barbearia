@@ -96,7 +96,7 @@ async function captureBothThemes(page: Page, testInfo: TestInfo, stem: string) {
   await expect(page.locator("html")).not.toHaveClass(/dark/);
   await page.screenshot({ path: testInfo.outputPath(`${stem}-light.png`), fullPage: true });
   await page.getByRole("button", { name: /alterar tema/i }).click();
-  const darkOption = page.getByRole("menuitem", { name: /tema escuro/i });
+  const darkOption = page.getByRole("menuitemradio", { name: /tema escuro/i });
   await darkOption.click();
   await expect(darkOption).toBeHidden();
   await expect(page.locator("html")).toHaveClass(/dark/);

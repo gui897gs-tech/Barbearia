@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X } from "@/components/icons";
 import {
   AppointmentRecord,
   EmployeeRecord,

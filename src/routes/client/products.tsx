@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader2, Package, ShoppingBag, Sparkles } from "lucide-react";
+import { Loader2, Package, ShoppingBag, Sparkles } from "@/components/icons";
 import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout/app-shell";
 import { listProducts, type ProductRecord } from "@/data/repositories/business-repository";

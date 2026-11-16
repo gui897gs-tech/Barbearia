@@ -1,5 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Lock } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Check, Instagram, Loader2, Lock, WhatsApp } from "@/components/icons";
+import { buttonClasses } from "@/components/ui/button";
+import { brand, whatsappUrl } from "@/shared/brand";
 import { FormEvent, useEffect, useState } from "react";
 import { getRoleHome, getUserRole, useAuth } from "@/features/auth/auth-context";
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
@@ -23,7 +25,8 @@ export const Route = createFileRoute("/login")({
       { title: "Entrar - King's Barber" },
       {
         name: "description",
-        content: "Acesse a suite premium de gestao de barbearia King's Barber.",
+        content:
+          "Entre ou crie sua conta na King's Barber para agendar e acompanhar seus horários.",
       },
     ],
   }),
@@ -47,6 +50,7 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (initialized && user && !isPasswordSetup) {
@@ -199,306 +203,440 @@ function LoginPage() {
     );
   }
 
+  const inputClass = "kb-field mt-1.5 h-12 px-4";
+  const isSignup = mode === "signup";
+
   return (
-    <div className="relative grid min-h-screen lg:grid-cols-2 luxury-bg">
-      <div className="absolute right-5 top-5 z-20">
+    <div className="relative grid min-h-screen luxury-bg lg:grid-cols-[1.05fr_1fr]">
+      <div className="absolute right-4 top-4 z-30 sm:right-6 sm:top-6">
         <ThemeToggle />
       </div>
-      <div className="relative hidden lg:flex flex-col justify-between p-12 border-r border-border overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-30"
-          style={{
-            background:
-              "radial-gradient(600px 400px at 30% 20%, rgba(212,166,58,0.25), transparent 60%)",
-          }}
+
+      <aside className="kb-site relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <img
+          src="/kings-barber/12-low-fade.jpg"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-[50%_30%]"
         />
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/30" />
+
+        <Link to="/" className="relative w-fit" aria-label="Voltar ao site">
           <img
-            src={kingsBarberLogo}
+            src="/kings-barber-logo-light.png"
             alt="King's Barber"
-            className="h-20 w-40 object-contain object-left"
+            className="h-16 w-auto object-contain"
           />
-          <div>
-            <div className="font-display text-2xl text-gradient-gold">King's Barber</div>
+        </Link>
+
+        <div className="relative max-w-md">
+          <p className="text-2xl font-semibold text-[#f2efe9]">King's Barber</p>
+          <p className="mt-2 text-[15px] leading-relaxed text-[#cfcac1]">
+            Com a sua conta você agenda pelo site, acompanha seus horários e cancela quando
+            precisar.
+          </p>
+          <dl className="mt-8 grid grid-cols-2 gap-6 border-t border-white/15 pt-6 text-sm">
+            <div>
+              <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a3a09a]">
+                Endereço
+              </dt>
+              <dd className="mt-1 text-[#f2efe9]">{brand.address.full}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#a3a09a]">
+                Horário
+              </dt>
+              <dd className="mt-1 text-[#f2efe9]">Seg. a sáb., 09h às 19h</dd>
+            </div>
+          </dl>
+          <div className="mt-6 flex items-center gap-5 text-sm text-[#cfcac1]">
+            <a
+              href={brand.instagram.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 transition hover:text-white"
+            >
+              <Instagram size={15} /> {brand.instagram.handle}
+            </a>
+            <a
+              href={whatsappUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 transition hover:text-white"
+            >
+              <WhatsApp size={15} /> {brand.whatsapp.display}
+            </a>
           </div>
         </div>
+      </aside>
 
-        <div className="relative z-10 max-w-md">
-          <h1 className="font-display text-5xl leading-tight">
-            A arte do <span className="text-gradient-gold">corte</span>, refinada em software.
-          </h1>
-          <p className="mt-6 text-muted-foreground">
-            Agende seu horário, acompanhe seus atendimentos e viva uma experiência premium na King's
-            Barber.
-          </p>
-          <div className="mt-10 flex items-center gap-6 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-            <span>Desde 2026</span>
-            <span className="h-px w-10 bg-border" />
-            <span>Feito para mestres</span>
-          </div>
-        </div>
-
-        <div className="relative z-10 text-xs text-muted-foreground">2026 King's Barber</div>
-      </div>
-
-      <div className="flex items-center justify-center p-6 md:p-12">
-        <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center gap-3 mb-10">
-            <img
-              src={kingsBarberLogo}
-              alt="King's Barber"
-              className="h-16 w-32 object-contain object-left"
-            />
-            <div className="font-display text-xl text-gradient-gold">King's Barber</div>
+      <div className="flex items-center justify-center px-5 py-20 sm:px-8 md:py-16">
+        <div className="w-full max-w-[440px]">
+          <div className="mb-8 flex flex-col items-center text-center lg:hidden">
+            <Link to="/" aria-label="Voltar ao site">
+              <img
+                src={kingsBarberLogo}
+                alt="King's Barber"
+                className="h-20 w-auto object-contain"
+              />
+            </Link>
           </div>
 
-          <div className="text-[11px] uppercase tracking-[0.25em] text-gold">Acesso seguro</div>
-          <h2 className="font-display text-3xl md:text-4xl mt-2">
-            {isPasswordSetup
-              ? "Defina sua senha"
-              : mode === "login"
-                ? "Entre na sua barbearia"
-                : "Crie sua conta"}
-          </h2>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {isPasswordSetup
-              ? "Finalize seu convite para acessar a área do barbeiro."
-              : mode === "login"
-                ? "Use seu e-mail e senha cadastrados."
-                : "Cadastre seus dados para acessar com segurança."}
-          </p>
-
-          {!isPasswordSetup && (
-            <div className="mt-6 grid grid-cols-2 rounded-xl border border-border bg-card/70 p-1">
-              <button
-                type="button"
-                disabled={!initialized}
-                onClick={() => {
-                  setMode("login");
-                  setError("");
-                  setMessage("");
-                }}
-                className={`rounded-lg px-4 py-2 text-sm transition ${
-                  mode === "login"
-                    ? "gradient-gold text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+          <div className="rounded-lg border border-border bg-card p-6 shadow-sm sm:p-9">
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-gold">
+                <Lock size={12} /> Acesso seguro
+              </div>
+              <h2
+                key={mode}
+                className="mt-3 font-display text-[2.4rem] leading-none md:text-[2.7rem]"
               >
-                Entrar
-              </button>
-              <button
-                type="button"
-                disabled={!initialized}
-                onClick={() => {
-                  setMode("signup");
-                  setError("");
-                  setMessage("");
-                }}
-                className={`rounded-lg px-4 py-2 text-sm transition ${
-                  mode === "signup"
-                    ? "gradient-gold text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Criar conta
-              </button>
+                {isPasswordSetup
+                  ? "Defina sua senha"
+                  : mode === "login"
+                    ? "Entrar na sua conta"
+                    : "Crie sua conta"}
+              </h2>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {isPasswordSetup
+                  ? "Finalize seu convite para acessar a área do barbeiro."
+                  : mode === "login"
+                    ? "Use seu e-mail e senha cadastrados."
+                    : "Preencha seus dados para agendar pelo site."}
+              </p>
             </div>
-          )}
-
-          {!isSupabaseConfigured && (
-            <div className="mt-6 rounded-xl border border-[color:var(--gold)]/40 bg-accent/40 p-3 text-xs text-muted-foreground">
-              Falta configurar o Supabase. Preencha o arquivo .env com a URL do projeto e a anon
-              key.
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-            {mode === "signup" && (
-              <div>
-                <label className="text-xs text-muted-foreground" htmlFor="fullName">
-                  Nome
-                </label>
-                <input
-                  id="fullName"
-                  type="text"
-                  required
-                  autoComplete="name"
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  className="mt-1 block w-full min-w-0 max-w-full appearance-none rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
-                />
-              </div>
-            )}
-
-            {mode === "signup" && (
-              <div>
-                <label className="text-xs text-muted-foreground" htmlFor="phone">
-                  Telefone
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  required
-                  autoComplete="tel"
-                  placeholder="(11) 99999-9999"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
-                />
-              </div>
-            )}
-
-            {mode === "signup" && (
-              <div>
-                <label className="text-xs text-muted-foreground" htmlFor="birthDate">
-                  Data de nascimento
-                </label>
-                <input
-                  id="birthDate"
-                  type="date"
-                  required
-                  autoComplete="bday"
-                  max={new Date().toISOString().slice(0, 10)}
-                  value={birthDate}
-                  onChange={(event) => setBirthDate(event.target.value)}
-                  className="mt-1 block w-full min-w-0 max-w-full appearance-none rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
-                />
-              </div>
-            )}
 
             {!isPasswordSetup && (
-              <div>
-                <label className="text-xs text-muted-foreground" htmlFor="email">
-                  E-mail
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
+              <div
+                role="group"
+                aria-label="Tipo de acesso"
+                className="relative mt-7 grid grid-cols-2 rounded-md border border-border bg-muted/60 p-1"
+              >
+                <span
+                  aria-hidden
+                  className={`absolute inset-y-1 w-[calc(50%-4px)] rounded gradient-gold transition-transform duration-500 [transition-timing-function:cubic-bezier(.34,1.56,.64,1)] ${
+                    isSignup ? "translate-x-[calc(100%+4px)]" : "translate-x-0"
+                  } left-1`}
                 />
+                <button
+                  type="button"
+                  aria-pressed={mode === "login"}
+                  disabled={!initialized}
+                  onClick={() => {
+                    setMode("login");
+                    setError("");
+                    setMessage("");
+                  }}
+                  className={`relative z-10 rounded px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    mode === "login"
+                      ? "text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Entrar
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isSignup}
+                  disabled={!initialized}
+                  onClick={() => {
+                    setMode("signup");
+                    setError("");
+                    setMessage("");
+                  }}
+                  className={`relative z-10 rounded px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    isSignup
+                      ? "text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Criar conta
+                </button>
               </div>
             )}
 
-            <div>
-              <label className="text-xs text-muted-foreground" htmlFor="password">
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete={
-                  isPasswordSetup || mode === "signup" ? "new-password" : "current-password"
-                }
-                required
-                minLength={isPasswordSetup || mode === "signup" ? minimumPasswordLength : 6}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
-              />
-              {(isPasswordSetup || mode === "signup") && (
-                <div className="mt-1 text-[11px] text-muted-foreground">
-                  Use 12 caracteres com maiuscula, minuscula, numero e simbolo.
+            {!isSupabaseConfigured && (
+              <div className="mt-6 rounded-md border border-[color:var(--gold)]/40 bg-accent/40 p-3 text-xs text-muted-foreground">
+                Falta configurar o Supabase. Preencha o arquivo .env com a URL do projeto e a anon
+                key.
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="mt-7 space-y-4" key={`form-${mode}`}>
+              {isSignup && (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="fullName">
+                    Nome
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    required
+                    autoComplete="name"
+                    placeholder="Seu nome completo"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    className={inputClass}
+                  />
                 </div>
               )}
-            </div>
 
-            {mode === "login" && (
+              {isSignup && (
+                <div className="grid gap-4">
+                  <div className="">
+                    <label className="text-xs font-semibold text-muted-foreground" htmlFor="phone">
+                      Telefone
+                    </label>
+                    <input
+                      id="phone"
+                      type="tel"
+                      required
+                      autoComplete="tel"
+                      placeholder="(11) 99999-9999"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="">
+                    <label
+                      className="text-xs font-semibold text-muted-foreground"
+                      htmlFor="birthDate"
+                    >
+                      Data de nascimento
+                    </label>
+                    <input
+                      id="birthDate"
+                      type="date"
+                      required
+                      autoComplete="bday"
+                      max={new Date().toISOString().slice(0, 10)}
+                      value={birthDate}
+                      onChange={(event) => setBirthDate(event.target.value)}
+                      className={`${inputClass} appearance-none`}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!isPasswordSetup && (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="email">
+                    E-mail
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="voce@email.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="password">
+                    Senha
+                  </label>
+                  {mode === "login" && !isPasswordSetup ? (
+                    <button
+                      type="button"
+                      disabled={loading || recoveryLoading || !initialized}
+                      onClick={handlePasswordRecovery}
+                      className="text-xs font-semibold text-gold transition hover:underline disabled:opacity-60"
+                    >
+                      {recoveryLoading ? "Enviando link..." : "Esqueci minha senha"}
+                    </button>
+                  ) : null}
+                </div>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete={isPasswordSetup || isSignup ? "new-password" : "current-password"}
+                    required
+                    minLength={isPasswordSetup || isSignup ? minimumPasswordLength : 6}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className={`${inputClass} pr-20`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    className="absolute right-2 top-1/2 mt-[3px] -translate-y-1/2 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
+                {(isPasswordSetup || isSignup) && <PasswordMeter password={password} />}
+              </div>
+
+              {(isPasswordSetup || isSignup) && (
+                <div>
+                  <label
+                    className="text-xs font-semibold text-muted-foreground"
+                    htmlFor="confirmPassword"
+                  >
+                    Confirmar senha
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    minLength={minimumPasswordLength}
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    className={inputClass}
+                  />
+                  {confirmPassword && confirmPassword !== password ? (
+                    <p className="mt-1.5 text-[11px] text-destructive">
+                      As senhas ainda não conferem.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {isSignup && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border bg-muted/40 p-3.5 text-xs leading-relaxed text-muted-foreground transition hover:border-[color:var(--gold)]/50">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(event) => setAcceptedTerms(event.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--gold)]"
+                  />
+                  <span>
+                    Confirmo que desejo criar minha conta de cliente na King's Barber. Acessos de
+                    barbeiro e proprietário são liberados pela administração.
+                  </span>
+                </label>
+              )}
+
+              {error && (
+                <div
+                  role="alert"
+                  className="kb-pop rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+                >
+                  {error}
+                </div>
+              )}
+              {message && (
+                <div
+                  role="status"
+                  className="kb-pop rounded-md border border-[color:var(--gold)]/40 bg-accent/50 p-3 text-xs text-foreground/80"
+                >
+                  {message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !initialized}
+                className={buttonClasses({ size: "lg", className: "w-full" })}
+              >
+                {loading ? <Loader2 className="animate-spin" /> : <Lock />}
+                {loading
+                  ? "Aguarde..."
+                  : isPasswordSetup
+                    ? "Salvar senha e acessar"
+                    : mode === "login"
+                      ? "Entrar"
+                      : "Criar conta segura"}
+              </button>
+            </form>
+
+            {!isPasswordSetup && (
               <button
                 type="button"
-                disabled={loading || recoveryLoading || !initialized}
-                onClick={handlePasswordRecovery}
-                className="w-full text-right text-xs text-muted-foreground transition hover:text-gold disabled:opacity-70"
+                disabled={!initialized}
+                onClick={() => {
+                  setMode((current) => (current === "login" ? "signup" : "login"));
+                  setError("");
+                  setMessage("");
+                }}
+                className="mt-6 w-full text-center text-xs text-muted-foreground transition hover:text-gold"
               >
-                {recoveryLoading ? "Enviando link..." : "Esqueci minha senha"}
+                {mode === "login" ? (
+                  <>
+                    Ainda não tem conta? <strong className="text-gold">Criar cadastro</strong>
+                  </>
+                ) : (
+                  <>
+                    Já tenho conta. <strong className="text-gold">Entrar</strong>
+                  </>
+                )}
               </button>
             )}
+          </div>
 
-            {(isPasswordSetup || mode === "signup") && (
-              <div>
-                <label className="text-xs text-muted-foreground" htmlFor="confirmPassword">
-                  Confirmar senha
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={minimumPasswordLength}
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="mt-1 w-full rounded-xl bg-card border border-border px-4 py-3 text-sm focus:outline-none focus:border-[color:var(--gold)] transition"
-                />
-              </div>
-            )}
-
-            {mode === "signup" && (
-              <div className="rounded-xl border border-[color:var(--gold)]/30 bg-[color:var(--gold)]/5 p-3 text-xs text-muted-foreground">
-                O cadastro publico cria uma conta de cliente. Acessos de barbeiro e dono sao
-                liberados pela administracao da barbearia.
-              </div>
-            )}
-
-            {mode === "signup" && (
-              <label className="flex items-start gap-3 rounded-xl border border-border bg-card/70 p-3 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(event) => setAcceptedTerms(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[color:var(--gold)]"
-                />
-                <span>
-                  Confirmo que desejo criar minha conta na King's Barber e proteger meu acesso com
-                  esta senha.
-                </span>
-              </label>
-            )}
-
-            {error && (
-              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
-                {error}
-              </div>
-            )}
-            {message && (
-              <div className="rounded-xl border border-[color:var(--gold)]/40 bg-accent/40 p-3 text-xs text-muted-foreground">
-                {message}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !initialized}
-              className="flex w-full items-center justify-center gap-2 rounded-xl gradient-gold px-5 py-3 text-sm font-semibold text-primary-foreground gold-glow disabled:cursor-not-allowed disabled:opacity-70"
+          <div className="mt-6 flex items-center justify-center gap-5 text-xs text-muted-foreground">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 transition hover:text-foreground"
             >
-              <Lock className="h-4 w-4" />
-              {loading
-                ? "Aguarde..."
-                : isPasswordSetup
-                  ? "Salvar senha e acessar"
-                  : mode === "login"
-                    ? "Entrar"
-                    : "Criar conta segura"}
-            </button>
-          </form>
-
-          {!isPasswordSetup && (
-            <button
-              type="button"
-              disabled={!initialized}
-              onClick={() => {
-                setMode((current) => (current === "login" ? "signup" : "login"));
-                setError("");
-                setMessage("");
-              }}
-              className="mt-6 w-full text-center text-xs text-muted-foreground hover:text-gold transition"
+              <ArrowLeft size={13} /> Voltar ao site
+            </Link>
+            <span className="h-3 w-px bg-border" />
+            <a
+              href={whatsappUrl("Olá! Preciso de ajuda para acessar minha conta.")}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 transition hover:text-[#25d366]"
             >
-              {mode === "login" ? "Ainda não tem conta? Criar cadastro" : "Já tenho conta. Entrar"}
-            </button>
-          )}
+              <WhatsApp size={13} /> Precisa de ajuda?
+            </a>
+          </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PasswordMeter({ password }: { password: string }) {
+  const checks = [
+    { label: "12+ caracteres", ok: password.length >= minimumPasswordLength },
+    { label: "Maiúscula", ok: /[A-Z]/.test(password) },
+    { label: "Minúscula", ok: /[a-z]/.test(password) },
+    { label: "Número", ok: /\d/.test(password) },
+    { label: "Símbolo", ok: /[^A-Za-z0-9]/.test(password) },
+  ];
+  const score = checks.filter((check) => check.ok).length;
+  return (
+    <div className="mt-2.5">
+      <div className="flex gap-1">
+        {checks.map((check, index) => (
+          <span
+            key={check.label}
+            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
+              index < score
+                ? score === checks.length
+                  ? "bg-emerald-500"
+                  : "bg-[color:var(--gold)]"
+                : "bg-border"
+            }`}
+          />
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+        {checks.map((check) => (
+          <span
+            key={check.label}
+            className={`inline-flex items-center gap-1 transition-colors ${
+              check.ok ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+            }`}
+          >
+            {check.ok ? (
+              <Check size={11} strokeWidth={2.6} />
+            ) : (
+              <span className="h-1 w-1 rounded-full bg-current" />
+            )}
+            {check.label}
+          </span>
+        ))}
       </div>
     </div>
   );
