@@ -53,6 +53,27 @@ test("barber workspace updates the live appointment state", async ({ page }, tes
   await expectNoHorizontalOverflow(page);
 });
 
+test("public booking advances only after the customer clicks continue", async ({ page }) => {
+  await installAuthenticatedSupabase(page, "client");
+  await page.goto("/agendar");
+
+  await expect(page.getByRole("heading", { name: "Escolha o serviço" })).toBeVisible();
+  await page.getByRole("button", { name: /Corte Signature/ }).click();
+  await expect(page.getByRole("heading", { name: "Escolha o serviço" })).toBeVisible();
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  await expect(page.getByRole("heading", { name: "Escolha o barbeiro" })).toBeVisible();
+  await page.getByRole("button", { name: /Miguel Reis/ }).click();
+  await expect(page.getByRole("heading", { name: "Escolha o barbeiro" })).toBeVisible();
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  await expect(page.getByRole("heading", { name: "Data e horário" })).toBeVisible();
+  await page.getByRole("button", { name: "09:00" }).click();
+  await expect(page.getByRole("heading", { name: "Data e horário" })).toBeVisible();
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page.getByRole("heading", { name: "Seus dados" })).toBeVisible();
+});
+
 test("client completes the booking flow and sees the resulting history", async ({
   page,
 }, testInfo) => {

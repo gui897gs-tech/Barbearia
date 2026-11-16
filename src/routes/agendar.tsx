@@ -114,7 +114,6 @@ function PublicBookingPage() {
   const [profileError, setProfileError] = useState("");
   const [draftRestored, setDraftRestored] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const autoAdvance = useRef<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -267,13 +266,6 @@ function PublicBookingPage() {
     };
   }, [barber, date, service]);
 
-  useEffect(
-    () => () => {
-      if (autoAdvance.current) window.clearTimeout(autoAdvance.current);
-    },
-    [],
-  );
-
   const selectedPrice =
     barber && service
       ? resolveBarberServicePrice(barberPrices, barber.id, service.id, service.price)
@@ -296,7 +288,6 @@ function PublicBookingPage() {
   const maxStep = firstPending === -1 ? STEP_CONFIRM : firstPending;
 
   function goTo(target: number) {
-    if (autoAdvance.current) window.clearTimeout(autoAdvance.current);
     const bounded = Math.max(0, Math.min(target, steps.length - 1));
     setDirection(bounded >= step ? 1 : -1);
     setSubmitError("");
@@ -307,11 +298,6 @@ function PublicBookingPage() {
         window.scrollTo({ top: window.scrollY + top - 110, behavior: "smooth" });
       }
     });
-  }
-
-  function scheduleAdvance(target: number) {
-    if (autoAdvance.current) window.clearTimeout(autoAdvance.current);
-    autoAdvance.current = window.setTimeout(() => goTo(target), 380);
   }
 
   function next() {
@@ -431,7 +417,6 @@ function PublicBookingPage() {
                                 onClick={() => {
                                   setService(item);
                                   setTime("");
-                                  scheduleAdvance(STEP_BARBER);
                                 }}
                                 aria-pressed={selected}
                                 className={`kb-focus group relative overflow-hidden rounded-md border p-5 text-left transition-all duration-300 ${
@@ -506,7 +491,6 @@ function PublicBookingPage() {
                                 onClick={() => {
                                   setBarber(item);
                                   setTime("");
-                                  scheduleAdvance(STEP_SLOT);
                                 }}
                                 aria-pressed={selected}
                                 className={`kb-focus group relative flex items-center gap-4 rounded-md border p-4 text-left transition-all duration-300 sm:flex-col sm:p-6 sm:text-center ${
@@ -589,14 +573,7 @@ function PublicBookingPage() {
                         {loadingTimes ? (
                           <SlotSkeleton />
                         ) : times.length ? (
-                          <SlotGroups
-                            times={times}
-                            value={time}
-                            onChange={(slot) => {
-                              setTime(slot);
-                              scheduleAdvance(STEP_DETAILS);
-                            }}
-                          />
+                          <SlotGroups times={times} value={time} onChange={setTime} />
                         ) : (
                           <EmptyState
                             message="Não há horários livres neste dia. Escolha outra data acima."
