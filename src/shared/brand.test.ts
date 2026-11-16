@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getOpenStatus, whatsappUrl } from "./brand";
+import { brand, getOpenStatus, whatsappUrl } from "./brand";
 
 // Datas em UTC; São Paulo está em UTC-3.
 describe("getOpenStatus", () => {
@@ -28,6 +28,11 @@ describe("getOpenStatus", () => {
 });
 
 describe("whatsappUrl", () => {
+  it("uses the barbershop WhatsApp number", () => {
+    expect(brand.whatsapp.digits).toBe("5511976433338");
+    expect(brand.whatsapp.display).toBe("(11) 97643-3338");
+  });
+
   it("encodes the message", () => {
     expect(whatsappUrl("Olá, tudo bem?")).toMatch(
       /^https:\/\/wa\.me\/\d+\?text=Ol%C3%A1%2C%20tudo%20bem%3F$/,

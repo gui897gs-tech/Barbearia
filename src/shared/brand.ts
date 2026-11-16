@@ -11,7 +11,7 @@
 const envWhatsApp =
   typeof import.meta !== "undefined" ? String(import.meta.env?.VITE_WHATSAPP_NUMBER ?? "") : "";
 
-const whatsappDigits = (envWhatsApp || "5511999999999").replace(/\D/g, "");
+const whatsappDigits = (envWhatsApp || "5511976433338").replace(/\D/g, "");
 
 export const brand = {
   name: "King's Barber",
