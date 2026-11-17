@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Instagram, LogIn, MapPin, Menu, UserRound, WhatsApp, X } from "@/components/icons";
+import { Instagram, LogIn, LogOut, MapPin, Menu, UserRound, WhatsApp, X } from "@/components/icons";
 import { siteNavigation, useOpenStatus } from "@/components/site/site-hooks";
 import { getRoleHome, useAuth } from "@/features/auth/auth-context";
 import { useAuthDialog } from "@/features/auth/auth-dialog-context";
@@ -53,7 +53,7 @@ export function OpenStatusBadge({ className = "" }: { className?: string }) {
 /* ───────────────────────── Cabeçalho ───────────────────────── */
 
 export function SiteHeader({ onHome = true }: { onHome?: boolean }) {
-  const { initialized, user, role } = useAuth();
+  const { initialized, user, role, signOut } = useAuth();
   const { openAuth } = useAuthDialog();
   const [solid, setSolid] = useState(!onHome);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -77,6 +77,11 @@ export function SiteHeader({ onHome = true }: { onHome?: boolean }) {
 
   const linkClass =
     "kb-focus text-[13px] font-semibold uppercase tracking-[0.12em] text-[#cfcac1] transition-colors hover:text-white";
+
+  async function handleSignOut() {
+    setMenuOpen(false);
+    await signOut();
+  }
 
   return (
     <header
@@ -116,14 +121,25 @@ export function SiteHeader({ onHome = true }: { onHome?: boolean }) {
 
         <div className="flex items-center gap-2">
           {initialized && user ? (
-            <Link
-              to={getRoleHome(role)}
-              aria-label={role === "client" ? "Minha página inicial" : "Meu painel"}
-              title={role === "client" ? "Minha página inicial" : "Meu painel"}
-              className="kb-focus grid h-10 w-10 place-items-center rounded-md text-[#f2efe9] transition hover:bg-white/10"
-            >
-              <UserRound size={20} />
-            </Link>
+            <>
+              <Link
+                to={getRoleHome(role)}
+                aria-label={role === "client" ? "Minha página inicial" : "Meu painel"}
+                title={role === "client" ? "Minha página inicial" : "Meu painel"}
+                className="kb-focus grid h-10 w-10 place-items-center rounded-md text-[#f2efe9] transition hover:bg-white/10"
+              >
+                <UserRound size={20} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
+                aria-label="Sair da conta"
+                title="Sair da conta"
+                className="kb-focus grid h-10 w-10 place-items-center rounded-md text-[#f2efe9] transition hover:bg-white/10 hover:text-[#e7a29b]"
+              >
+                <LogOut size={19} />
+              </button>
+            </>
           ) : (
             <button
               type="button"

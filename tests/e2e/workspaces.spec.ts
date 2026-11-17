@@ -120,6 +120,7 @@ test("client completes the booking flow and sees the resulting history", async (
   // O cliente volta para o site público, que destaca o próximo horário confirmado.
   await expect(page.getByText("Seu próximo horário")).toBeVisible();
   await expect(page.getByText("Corte Signature com Miguel Reis")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sair da conta" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath("client-home.png"), fullPage: true });
 
@@ -148,6 +149,14 @@ test("client completes the booking flow and sees the resulting history", async (
   await expect(page.getByRole("heading", { name: "Gel de Cabelo" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Laquê" })).toBeVisible();
   await expectNoHorizontalOverflow(page);
+});
+
+test("client can sign out from the public site header", async ({ page }) => {
+  await installAuthenticatedSupabase(page, "client");
+  await openAuthenticatedWorkspace(page, "/");
+
+  await page.getByRole("button", { name: "Sair da conta" }).click();
+  await expect(page.getByRole("button", { name: "Entrar ou criar conta" })).toBeVisible();
 });
 
 async function captureWorkspaceTheme(page: Page, testInfo: TestInfo, stem: string) {
