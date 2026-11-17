@@ -50,6 +50,9 @@ test("opens login and signup in a popup without leaving the home page", async ({
 }, testInfo) => {
   await page.goto("/");
 
+  await expect(page.locator("#servicos")).not.toContainText("R$");
+  await expect(page.getByRole("heading", { name: "Escolha o barbeiro" })).toBeVisible();
+
   await page.getByRole("button", { name: "Entrar ou criar conta" }).click();
   await expect(page.getByRole("dialog", { name: "Entrar na conta" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Entrar na sua conta" })).toBeVisible();

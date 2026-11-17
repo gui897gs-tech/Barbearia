@@ -38,7 +38,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "King's Barber" },
       {
         property: "og:description",
-        content: "Barbearia com horário marcado. Veja serviços, preços e agende online.",
+        content: "Barbearia com horário marcado. Escolha o barbeiro e agende online.",
       },
       { property: "og:image", content: "/kings-barber/12-low-fade.jpg" },
     ],
@@ -54,91 +54,78 @@ const services: Array<{
   name: string;
   description: string;
   duration: string;
-  price: string;
 }> = [
   {
     category: "Cortes",
     name: "Corte masculino",
     description: "Social, degradê ou low fade.",
     duration: "45 min",
-    price: "R$ 40",
   },
   {
     category: "Cortes",
     name: "Corte infantil",
     description: "Para crianças até 12 anos.",
     duration: "40 min",
-    price: "R$ 35",
   },
   {
     category: "Cortes",
     name: "Pezinho / acabamento",
     description: "Retoque do contorno entre um corte e outro.",
     duration: "20 min",
-    price: "R$ 15",
   },
   {
     category: "Barba",
     name: "Barba e acabamento",
     description: "Desenho, alinhamento e toalha quente.",
     duration: "30 min",
-    price: "R$ 30",
   },
   {
     category: "Barba",
     name: "Sobrancelha",
     description: "Limpeza e alinhamento na navalha.",
     duration: "15 min",
-    price: "R$ 15",
   },
   {
     category: "Combos",
     name: "Corte + barba",
     description: "Corte e barba no mesmo horário.",
     duration: "1h10",
-    price: "R$ 65",
   },
   {
     category: "Combos",
     name: "Corte + sobrancelha",
     description: "Corte com sobrancelha na navalha.",
     duration: "55 min",
-    price: "R$ 50",
   },
   {
     category: "Tratamentos",
     name: "Corte + hidratação",
     description: "Corte com hidratação dos fios.",
     duration: "1h",
-    price: "R$ 60",
   },
   {
     category: "Tratamentos",
     name: "Corte + botox capilar",
     description: "Redução de volume e frizz, com corte.",
     duration: "1h30",
-    price: "R$ 85",
   },
   {
     category: "Estilo",
     name: "Corte + nudred",
     description: "Textura feita na esponja, com degradê.",
     duration: "1h10",
-    price: "R$ 60",
   },
   {
     category: "Estilo",
     name: "Corte + tranças",
     description: "Tranças nagô com degradê nas laterais.",
     duration: "2h",
-    price: "a partir de R$ 100",
   },
   {
     category: "Estilo",
     name: "Nevou / platinado",
     description: "Descoloração, matização e corte.",
     duration: "2h30",
-    price: "a partir de R$ 130",
   },
 ];
 
@@ -341,8 +328,8 @@ function LandingPage() {
               Corte, barba e acabamento com hora marcada.
             </h1>
             <p className="kb-hero-reveal mx-auto mt-6 max-w-xl text-base leading-relaxed text-[#a3a09a] [animation-delay:160ms] sm:text-lg">
-              Escolha o serviço, o barbeiro e o horário pelo site. Se preferir, fale com a gente
-              pelo WhatsApp.
+              Escolha o barbeiro, veja os serviços e valores dele e reserve seu horário. Se
+              preferir, fale com a gente pelo WhatsApp.
             </p>
             <div className="kb-hero-reveal mt-9 flex flex-col justify-center gap-3 [animation-delay:240ms] sm:flex-row">
               <Link to="/agendar" className="kb-btn kb-btn-gold kb-focus">
@@ -414,8 +401,8 @@ function LandingPage() {
           <div className="kb-container">
             <SectionTitle
               eyebrow="Serviços"
-              title="Serviços e preços"
-              description="Valores de referência. O preço final pode variar conforme o profissional e aparece antes de você confirmar o agendamento."
+              title="Serviços"
+              description="Conheça as opções da casa. Os valores aparecem no agendamento depois que você escolhe o barbeiro."
             />
 
             <div
@@ -434,8 +421,7 @@ function LandingPage() {
                         <li key={service.name} className="border-b border-white/8">
                           <Link
                             to="/agendar"
-                            search={{ servico: service.name }}
-                            aria-label={`Agendar ${service.name}, ${service.price}`}
+                            aria-label={`Agendar ${service.name}`}
                             className="kb-focus group flex items-start justify-between gap-6 py-4"
                           >
                             <span className="min-w-0">
@@ -447,9 +433,6 @@ function LandingPage() {
                               </span>
                             </span>
                             <span className="shrink-0 text-right">
-                              <span className="block text-[15px] font-semibold tabular-nums text-[#f2efe9]">
-                                {service.price}
-                              </span>
                               <span className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-[#c9a24a] opacity-80 transition-opacity group-hover:opacity-100">
                                 Agendar <ArrowRight size={12} />
                               </span>
@@ -539,12 +522,12 @@ function LandingPage() {
             >
               {[
                 {
-                  title: "Escolha o serviço",
-                  text: "Preço e duração aparecem antes de você seguir.",
+                  title: "Escolha o barbeiro",
+                  text: "Comece escolhendo o profissional que vai atender você.",
                 },
                 {
-                  title: "Barbeiro e horário",
-                  text: "Só aparecem os horários livres de cada profissional.",
+                  title: "Serviço e horário",
+                  text: "Veja os serviços, os valores e os horários livres daquele barbeiro.",
                 },
                 {
                   title: "Confirme",

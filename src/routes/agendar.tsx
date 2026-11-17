@@ -50,7 +50,7 @@ export const Route = createFileRoute("/agendar")({
       {
         name: "description",
         content:
-          "Escolha o serviço, o barbeiro e o melhor horário na King's Barber. Confirmação imediata.",
+          "Escolha o barbeiro, veja os serviços e valores dele e reserve o melhor horário na King's Barber.",
       },
       { name: "theme-color", content: "#070707" },
     ],
@@ -59,15 +59,15 @@ export const Route = createFileRoute("/agendar")({
 });
 
 const steps = [
-  { label: "Serviço", short: "Serviço" },
   { label: "Profissional", short: "Barbeiro" },
+  { label: "Serviço e valor", short: "Serviço" },
   { label: "Data e horário", short: "Horário" },
   { label: "Seus dados", short: "Dados" },
   { label: "Confirmar", short: "Confirmar" },
 ] as const;
 
-const STEP_SERVICE = 0;
-const STEP_BARBER = 1;
+const STEP_BARBER = 0;
+const STEP_SERVICE = 1;
 const STEP_SLOT = 2;
 const STEP_DETAILS = 3;
 const STEP_CONFIRM = 4;
@@ -90,7 +90,7 @@ function PublicBookingPage() {
     () => Array.from({ length: 14 }, (_, index) => addDays(new Date(), index)),
     [],
   );
-  const [step, setStep] = useState(STEP_SERVICE);
+  const [step, setStep] = useState(STEP_BARBER);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [barbers, setBarbers] = useState<EmployeeRecord[]>([]);
@@ -277,8 +277,8 @@ function PublicBookingPage() {
     phoneDigits.length >= 10 &&
     phoneDigits.length <= 13;
   const stepReady = [
-    Boolean(service),
     Boolean(barber),
+    Boolean(service),
     Boolean(date && time),
     Boolean(time) && detailsAreValid && !loadingProfile,
     true,
@@ -378,8 +378,8 @@ function PublicBookingPage() {
               Agendar horário
             </h1>
             <p className="kb-hero-reveal mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[#a9a6a0] [animation-delay:160ms] sm:text-base">
-              Escolha o serviço, o barbeiro e um horário livre. A confirmação é imediata e fica
-              registrada na sua conta.
+              Escolha primeiro o barbeiro. Depois veja os serviços, os valores dele e um horário
+              livre. A confirmação fica registrada na sua conta.
             </p>
           </div>
 
@@ -402,9 +402,9 @@ function PublicBookingPage() {
                 <div key={step} className={direction < 0 ? "kb-step-back" : "kb-step-in"}>
                   {step === STEP_SERVICE ? (
                     <ChoiceSection
-                      index={1}
-                      title="Escolha o serviço"
-                      description="O valor pode variar conforme o barbeiro escolhido na próxima etapa."
+                      index={2}
+                      title="Escolha o serviço e veja o valor"
+                      description={`Valores de ${barber?.name ?? "seu barbeiro"}. Escolha o tipo de atendimento que você deseja.`}
                     >
                       {services.length ? (
                         <div className="grid gap-3 sm:grid-cols-2">
@@ -442,14 +442,12 @@ function PublicBookingPage() {
                                 <div className="mt-5 flex items-end justify-between gap-4">
                                   <span className="kb-editorial text-[1.75rem] text-[#f4f0e8]">
                                     {formatCurrency(
-                                      barber
-                                        ? resolveBarberServicePrice(
-                                            barberPrices,
-                                            barber.id,
-                                            item.id,
-                                            item.price,
-                                          )
-                                        : item.price,
+                                      resolveBarberServicePrice(
+                                        barberPrices,
+                                        barber!.id,
+                                        item.id,
+                                        item.price,
+                                      ),
                                     )}
                                   </span>
                                   <span className="flex items-center gap-1.5 rounded-full border border-white/10 px-2.5 py-1 text-xs text-[#a9a6a0]">
@@ -468,27 +466,20 @@ function PublicBookingPage() {
 
                   {step === STEP_BARBER ? (
                     <ChoiceSection
-                      index={2}
+                      index={1}
                       title="Escolha o barbeiro"
-                      description="Os horários da próxima etapa são da agenda de quem você escolher."
+                      description="Os serviços, valores e horários das próximas etapas serão desse profissional."
                     >
                       {barbers.length ? (
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                           {barbers.map((item) => {
                             const selected = barber?.id === item.id;
-                            const price = service
-                              ? resolveBarberServicePrice(
-                                  barberPrices,
-                                  item.id,
-                                  service.id,
-                                  service.price,
-                                )
-                              : null;
                             return (
                               <button
                                 key={item.id}
                                 type="button"
                                 onClick={() => {
+                                  if (barber && barber.id !== item.id) setService(null);
                                   setBarber(item);
                                   setTime("");
                                 }}
@@ -526,11 +517,7 @@ function PublicBookingPage() {
                                     <span className="inline-flex items-center gap-1 text-[#e6c773]">
                                       <Star size={12} className="fill-current" /> {item.rating}
                                     </span>
-                                    {price !== null ? (
-                                      <span className="font-semibold text-[#f4f0e8]">
-                                        {formatCurrency(price)}
-                                      </span>
-                                    ) : null}
+                                    <span className="text-[#a9a6a0]">Ver serviços e valores</span>
                                   </span>
                                 </span>
                               </button>
@@ -730,14 +717,14 @@ function PublicBookingPage() {
                       <div className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
                         <div className="rounded-md border border-white/10 bg-white/[0.02] p-5 sm:p-6">
                           <SummaryRow
-                            label="Serviço"
-                            value={service.name}
-                            onEdit={() => goTo(STEP_SERVICE)}
-                          />
-                          <SummaryRow
                             label="Barbeiro"
                             value={barber.name}
                             onEdit={() => goTo(STEP_BARBER)}
+                          />
+                          <SummaryRow
+                            label="Serviço"
+                            value={service.name}
+                            onEdit={() => goTo(STEP_SERVICE)}
                           />
                           <SummaryRow
                             label="Data"
@@ -859,7 +846,11 @@ function PublicBookingPage() {
             </button>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11px] text-[#a9a6a0]">
-                {service ? service.name : "Escolha um serviço"}
+                {service
+                  ? service.name
+                  : barber
+                    ? `Serviços de ${barber.name}`
+                    : "Escolha um barbeiro"}
                 {time ? ` · ${time}` : ""}
               </p>
               <p className="text-sm font-bold text-[#f4f0e8]">
@@ -1055,16 +1046,16 @@ function BookingSummary({
 }) {
   const rows = [
     {
-      step: STEP_SERVICE,
-      icon: <Scissors size={16} />,
-      label: "Serviço",
-      value: service ? `${service.name} · ${service.duration} min` : "",
-    },
-    {
       step: STEP_BARBER,
       icon: <UserRound size={16} />,
       label: "Profissional",
       value: barber?.name ?? "",
+    },
+    {
+      step: STEP_SERVICE,
+      icon: <Scissors size={16} />,
+      label: "Serviço",
+      value: service ? `${service.name} · ${service.duration} min` : "",
     },
     {
       step: STEP_SLOT,

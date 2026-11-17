@@ -79,14 +79,19 @@ test("public booking advances only after the customer clicks continue", async ({
   await installAuthenticatedSupabase(page, "client");
   await page.goto("/agendar");
 
-  await expect(page.getByRole("heading", { name: "Escolha o serviço" })).toBeVisible();
-  await page.getByRole("button", { name: /Corte Signature/ }).click();
-  await expect(page.getByRole("heading", { name: "Escolha o serviço" })).toBeVisible();
-  await page.getByRole("button", { name: "Continuar" }).click();
-
   await expect(page.getByRole("heading", { name: "Escolha o barbeiro" })).toBeVisible();
   await page.getByRole("button", { name: /Miguel Reis/ }).click();
   await expect(page.getByRole("heading", { name: "Escolha o barbeiro" })).toBeVisible();
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Escolha o serviço e veja o valor" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Corte Signature/ })).toContainText("R$ 89");
+  await page.getByRole("button", { name: /Corte Signature/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Escolha o serviço e veja o valor" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Continuar" }).click();
 
   await expect(page.getByRole("heading", { name: "Data e horário" })).toBeVisible();
