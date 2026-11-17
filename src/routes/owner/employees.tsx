@@ -188,8 +188,28 @@ function AddEmployeeDialog({
   const [email, setEmail] = useState("");
   const [createAccess, setCreateAccess] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [imageObjectKey] = useState(() => `team-new-${crypto.randomUUID()}`);
   const [accessMessage, setAccessMessage] = useState("");
   const [error, setError] = useState("");
+
+  async function handleImageFile(file: File | undefined) {
+    if (!file) return;
+    setImageError("");
+    setUploadingImage(true);
+    try {
+      setImage(await uploadProfileImage(file, imageObjectKey));
+    } catch (uploadError) {
+      setImageError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Não foi possível processar essa imagem. Tente outra foto.",
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -266,7 +286,76 @@ function AddEmployeeDialog({
         <div className="mt-6 space-y-4">
           <TextField label="Nome" value={name} onChange={setName} required />
           <TextField label="Cargo" value={title} onChange={setTitle} required />
-          <TextField label="URL da foto" value={image} onChange={setImage} />
+
+          <div className="rounded-2xl border border-border bg-background/40 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <ImagePlus className="h-4 w-4 text-gold" /> Foto do barbeiro
+            </div>
+            <div className="mt-3 flex items-center gap-4">
+              {image ? (
+                <img
+                  src={image}
+                  alt={`Prévia da foto de ${name || "novo barbeiro"}`}
+                  className="h-20 w-20 shrink-0 rounded-full object-cover ring-2 ring-[color:var(--gold)]/40"
+                  onError={() => setImageError("Não foi possível carregar a imagem informada.")}
+                />
+              ) : (
+                <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full border border-dashed border-[color:var(--gold)]/35 bg-accent/40 text-gold">
+                  <ImagePlus className="h-6 w-6" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <label
+                  htmlFor="new-barber-image"
+                  className="flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-[color:var(--gold)]/40 px-3 py-2.5 text-xs text-muted-foreground transition hover:border-[color:var(--gold)] hover:text-foreground"
+                >
+                  {uploadingImage
+                    ? "Processando foto..."
+                    : image
+                      ? "Trocar foto"
+                      : "Escolher foto do celular"}
+                </label>
+                <input
+                  id="new-barber-image"
+                  type="file"
+                  accept=".jpg,.jpeg,.jfif,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                  className="sr-only"
+                  disabled={uploadingImage}
+                  onChange={(event) => {
+                    void handleImageFile(event.target.files?.[0]);
+                    event.currentTarget.value = "";
+                  }}
+                />
+                {image ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImage("");
+                      setImageError("");
+                    }}
+                    className="mt-2 w-full text-center text-xs text-muted-foreground transition hover:text-destructive"
+                  >
+                    Remover foto
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <label className="mt-3 block text-[11px] text-muted-foreground" htmlFor="new-image-url">
+              Ou cole a URL da foto
+            </label>
+            <input
+              id="new-image-url"
+              type="url"
+              value={image}
+              placeholder="https://..."
+              onChange={(event) => {
+                setImage(event.target.value);
+                setImageError("");
+              }}
+              className="mt-1 w-full rounded-xl border border-border bg-card px-3 py-2.5 text-xs transition focus:border-[color:var(--gold)] focus:outline-none"
+            />
+            {imageError ? <p className="mt-2 text-xs text-destructive">{imageError}</p> : null}
+          </div>
 
           <TextField
             label="Valor fixo mensal pago pelo barbeiro (R$)"
@@ -328,7 +417,7 @@ function AddEmployeeDialog({
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || uploadingImage || Boolean(imageError)}
             className="flex-1 rounded-xl gradient-gold px-4 py-3 text-sm font-medium text-primary-foreground gold-glow disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "Salvando..." : "Salvar"}

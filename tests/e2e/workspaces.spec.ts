@@ -37,6 +37,27 @@ test("owner workspace loads, persists settings and remains responsive", async ({
   await expect(page.getByText("Atendimentos concluídos", { exact: true })).toBeVisible();
 });
 
+test("owner can upload and preview a barber photo before saving", async ({ page }) => {
+  await installAuthenticatedSupabase(page, "owner");
+  await openAuthenticatedWorkspace(page, "/owner");
+  await page.goto("/owner/employees");
+
+  await page.getByRole("button", { name: "Adicionar barbeiro" }).click();
+  await page.getByLabel("Nome").fill("Paulo Teste");
+  await page.getByLabel("Escolher foto do celular").setInputFiles({
+    name: "paulo.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+
+  await expect(page.getByRole("img", { name: "Prévia da foto de Paulo Teste" })).toBeVisible();
+  await expect(page.getByLabel("Ou cole a URL da foto")).toHaveValue(/profile-images/);
+  await expect(page.getByRole("button", { name: "Salvar" })).toBeEnabled();
+});
+
 test("barber workspace updates the live appointment state", async ({ page }, testInfo) => {
   await installAuthenticatedSupabase(page, "barber");
   await openAuthenticatedWorkspace(page, "/barber");

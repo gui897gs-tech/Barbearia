@@ -3,6 +3,10 @@ import type { Page, Route } from "@playwright/test";
 export type MockRole = "owner" | "barber" | "client";
 
 const storageKey = "sb-mock-auth-token";
+const tinyPng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+);
 const now = new Date();
 const today = formatDate(now);
 const tomorrow = formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
@@ -185,6 +189,16 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
 
     if (pathname === "/auth/v1/logout") {
       await respond(route, {});
+      return;
+    }
+
+    if (pathname.startsWith("/storage/v1/object/public/profile-images/")) {
+      await route.fulfill({ status: 200, contentType: "image/png", body: tinyPng });
+      return;
+    }
+
+    if (pathname.startsWith("/storage/v1/object/profile-images/")) {
+      await respond(route, { Key: pathname.replace("/storage/v1/object/", "") });
       return;
     }
 
