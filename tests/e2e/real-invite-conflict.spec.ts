@@ -59,7 +59,7 @@ test("barber invite never changes the password or role of an active owner sessio
 
     await page.goto(`${appUrl}/login`);
     await page.getByLabel("E-mail").fill(ownerEmail);
-    await page.getByLabel("Senha").fill(ownerPassword);
+    await page.getByLabel("Senha", { exact: true }).fill(ownerPassword);
     await page.locator("form").getByRole("button", { name: "Entrar", exact: true }).click();
     await expect(page).toHaveURL(/\/owner\/?$/, { timeout: 15_000 });
 
@@ -88,5 +88,10 @@ test("barber invite never changes the password or role of an active owner sessio
   } finally {
     if (barberId) await admin.auth.admin.deleteUser(barberId);
     if (ownerId) await admin.auth.admin.deleteUser(ownerId);
+    const accountIds = [barberId, ownerId].filter((id): id is string => Boolean(id));
+    if (accountIds.length) {
+      const cleanup = await admin.from("customers").delete().in("id", accountIds);
+      expect(cleanup.error).toBeNull();
+    }
   }
 });

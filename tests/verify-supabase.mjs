@@ -29,6 +29,8 @@ const clientBEmail = `client-b-homolog-${suffix}@example.com`;
 const serviceId = `homolog-service-${suffix}`;
 const blockedServiceId = `blocked-service-${suffix}`;
 const createdUserIds = [];
+const testAccountIds = [];
+const createdAppointmentIds = [];
 let ownerId;
 let invitedBarberUserId;
 let barberId;
@@ -50,6 +52,7 @@ async function createUser(email, role, fullName) {
   const user = assertNoError(result, `Criar usuário ${role}`).user;
   assert.ok(user?.id, `Usuário ${role} não retornou id`);
   createdUserIds.push(user.id);
+  testAccountIds.push(user.id);
   return user.id;
 }
 
@@ -124,6 +127,7 @@ async function run() {
     barberId = invitation.barber?.id;
     assert.ok(invitedBarberUserId && barberId, "Convite não retornou usuário e perfil do barbeiro");
     createdUserIds.push(invitedBarberUserId);
+    testAccountIds.push(invitedBarberUserId);
 
     assertNoError(
       await admin.auth.admin.updateUserById(invitedBarberUserId, {
@@ -176,6 +180,7 @@ async function run() {
     assert.equal(successfulAttempts.length, 1, "Duas reservas simultâneas foram persistidas");
     assert.equal(rejectedAttempts.length, 1, "A colisão de agenda não foi rejeitada");
     const appointmentId = successfulAttempts[0].data;
+    createdAppointmentIds.push(appointmentId);
 
     const appointment = assertNoError(
       await admin
@@ -252,6 +257,7 @@ async function run() {
       }),
       "Criar reserva para cancelamento",
     );
+    createdAppointmentIds.push(cancelBooking);
     assertNoError(
       await winningClient.rpc("cancel_appointment", { p_appointment_id: cancelBooking }),
       "Cancelar reserva dentro da regra configurada",
@@ -302,6 +308,9 @@ async function run() {
       ),
     );
   } finally {
+    if (createdAppointmentIds.length) {
+      await admin.from("appointments").delete().in("id", createdAppointmentIds);
+    }
     if (barberId) {
       await admin.from("appointments").delete().eq("barber_id", barberId);
       await admin.from("barber_service_prices").delete().eq("barber_id", barberId);
@@ -311,6 +320,12 @@ async function run() {
     if (ownerId) await admin.from("owner_invite_rate_limits").delete().eq("owner_id", ownerId);
     for (const userId of [...createdUserIds].reverse()) {
       await admin.auth.admin.deleteUser(userId);
+    }
+    if (testAccountIds.length) {
+      assertNoError(
+        await admin.from("customers").delete().in("id", testAccountIds),
+        "Limpar clientes temporários",
+      );
     }
   }
 }
