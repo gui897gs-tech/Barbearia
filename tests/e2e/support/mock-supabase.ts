@@ -387,6 +387,7 @@ function createUser(role: MockRole) {
       email: identity.email,
       email_verified: true,
       full_name: identity.fullName,
+      avatar_url: role === "owner" ? avatar("HA") : null,
       phone: role === "client" ? "(11) 98888-2200" : "(11) 99999-1000",
       birth_date: role === "client" ? "1992-08-14" : null,
     },

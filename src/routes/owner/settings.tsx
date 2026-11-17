@@ -23,10 +23,11 @@ export const Route = createFileRoute("/owner/settings")({
 
 function OwnerSettings() {
   const { user } = useAuth();
+  const storedOwnerImage = String(user?.user_metadata?.avatar_url || "");
   const [settings, setSettings] = useState<BusinessSettingsRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [ownerImage, setOwnerImage] = useState(() => String(user?.user_metadata?.avatar_url || ""));
+  const [ownerImage, setOwnerImage] = useState(storedOwnerImage);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   async function handleOwnerImage(file: File | undefined) {
@@ -53,6 +54,10 @@ function OwnerSettings() {
       .catch(notifyError)
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    setOwnerImage(storedOwnerImage);
+  }, [storedOwnerImage]);
 
   function update<Key extends keyof BusinessSettingsRecord>(
     key: Key,

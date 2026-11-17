@@ -21,6 +21,7 @@ test("owner workspace loads, persists settings and remains responsive", async ({
 
   await page.goto("/owner/settings");
   await expect(page.getByRole("heading", { name: "Configurações" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Foto do proprietário" })).toBeVisible();
   await page.getByLabel("Nome da barbearia").fill("King's Barber Studio");
   await page.getByRole("button", { name: "Salvar alterações" }).click();
   await expect(page.getByText("Configurações atualizadas.")).toBeVisible();
