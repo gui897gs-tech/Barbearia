@@ -33,6 +33,16 @@ test("owner workspace loads, persists settings and remains responsive", async ({
   await page.getByRole("button", { name: /salvar preços/i }).click();
   await expect(page.getByText(/preços por barbeiro atualizados/i)).toBeVisible();
 
+  await page.goto("/owner/monthly");
+  await expect(page.getByRole("heading", { name: "Mensalistas" })).toBeVisible();
+  const monthlyList =
+    (page.viewportSize()?.width ?? 1280) < 1024 ? page.locator("article") : page.locator("tbody");
+  await expect(monthlyList.getByText("Lucas Mensalista").first()).toBeVisible();
+  await monthlyList.getByRole("button", { name: "Marcar como pago" }).first().click();
+  await expect(page.getByText("Pagamento mensal registrado.")).toBeVisible();
+  await expect(monthlyList.getByText("Pago", { exact: true }).first()).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
   await page.goto("/owner/reports");
   await expect(page.getByRole("heading", { name: "Relatórios" })).toBeVisible();
   await expect(page.getByText("Atendimentos concluídos", { exact: true })).toBeVisible();

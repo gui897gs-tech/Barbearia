@@ -148,6 +148,21 @@ const history = [
   },
 ];
 
+const monthlyMembershipSeed = [
+  {
+    id: "monthly-1",
+    customer_name: "Lucas Mensalista",
+    whatsapp: "(11) 97777-2211",
+    plan_name: "4 cortes por mês",
+    monthly_amount: 180,
+    due_day: 10,
+    active: true,
+    notes: "Atendimento preferencial aos sábados.",
+    created_at: `${lastMonth}T10:00:00-03:00`,
+    updated_at: `${today}T08:00:00-03:00`,
+  },
+];
+
 const settings = {
   id: true,
   name: "King's Barber",
@@ -168,6 +183,8 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
   const session = createSession(user);
   const appointments = createAppointments();
   const barberServicePrices = barberServicePriceSeed.map((item) => ({ ...item }));
+  const monthlyMemberships = monthlyMembershipSeed.map((item) => ({ ...item }));
+  const monthlyPayments: Array<Record<string, unknown>> = [];
 
   await page.addInitScript(
     ({ key, value }) => {
@@ -356,6 +373,82 @@ export async function installAuthenticatedSupabase(page: Page, role: MockRole) {
 
     if (pathname === "/rest/v1/customer_history") {
       await respond(route, history);
+      return;
+    }
+
+    if (pathname === "/rest/v1/monthly_memberships") {
+      if (request.method() === "GET") {
+        await respond(route, rowResponse(request, monthlyMemberships));
+        return;
+      }
+
+      if (request.method() === "DELETE") {
+        const id = stripEq(url.searchParams.get("id") ?? "");
+        const index = monthlyMemberships.findIndex((item) => item.id === id);
+        if (index >= 0) monthlyMemberships.splice(index, 1);
+        for (let paymentIndex = monthlyPayments.length - 1; paymentIndex >= 0; paymentIndex -= 1) {
+          if (monthlyPayments[paymentIndex].membership_id === id)
+            monthlyPayments.splice(paymentIndex, 1);
+        }
+        await respond(route, []);
+        return;
+      }
+
+      const input = postData(request.postData());
+      const next = {
+        id: String(input.id),
+        customer_name: String(input.customer_name),
+        whatsapp: String(input.whatsapp),
+        plan_name: String(input.plan_name),
+        monthly_amount: Number(input.monthly_amount),
+        due_day: Number(input.due_day),
+        active: Boolean(input.active),
+        notes: input.notes ? String(input.notes) : "",
+        created_at: String(input.created_at ?? new Date().toISOString()),
+        updated_at: String(input.updated_at ?? new Date().toISOString()),
+      };
+      const index = monthlyMemberships.findIndex((item) => item.id === next.id);
+      if (index >= 0) monthlyMemberships[index] = next;
+      else monthlyMemberships.unshift(next);
+      await respond(route, rowResponse(request, next));
+      return;
+    }
+
+    if (pathname === "/rest/v1/monthly_membership_payments") {
+      if (request.method() === "GET") {
+        const reference = stripEq(url.searchParams.get("reference_month") ?? "");
+        const selected = reference
+          ? monthlyPayments.filter((item) => item.reference_month === reference)
+          : monthlyPayments;
+        await respond(route, rowResponse(request, selected));
+        return;
+      }
+
+      if (request.method() === "DELETE") {
+        const membershipId = stripEq(url.searchParams.get("membership_id") ?? "");
+        const reference = stripEq(url.searchParams.get("reference_month") ?? "");
+        for (let index = monthlyPayments.length - 1; index >= 0; index -= 1) {
+          const payment = monthlyPayments[index];
+          if (
+            payment.membership_id === membershipId &&
+            (!reference || payment.reference_month === reference)
+          ) {
+            monthlyPayments.splice(index, 1);
+          }
+        }
+        await respond(route, []);
+        return;
+      }
+
+      const input = postData(request.postData());
+      const index = monthlyPayments.findIndex(
+        (item) =>
+          item.membership_id === input.membership_id &&
+          item.reference_month === input.reference_month,
+      );
+      if (index >= 0) monthlyPayments[index] = input;
+      else monthlyPayments.unshift(input);
+      await respond(route, rowResponse(request, input));
       return;
     }
 

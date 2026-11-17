@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
-import { Check, Loader2, Lock } from "@/components/icons";
+import { Loader2, Lock } from "@/components/icons";
 import { buttonClasses } from "@/components/ui/button";
 import { getRoleHome, getUserRole, useAuth, type AppRole } from "@/features/auth/auth-context";
 import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
@@ -26,11 +26,8 @@ export function AuthPanel({
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [birthDate, setBirthDate] = useState("");
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -75,20 +72,8 @@ export function AuthPanel({
         setError("Informe um telefone válido para criar a conta.");
         return;
       }
-      if (!birthDate || birthDate > new Date().toISOString().slice(0, 10)) {
-        setError("Informe uma data de nascimento válida para criar a conta.");
-        return;
-      }
       if (!isStrongPassword(password)) {
-        setError("Use 12 caracteres com maiúscula, minúscula, número e símbolo.");
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError("As senhas não conferem.");
-        return;
-      }
-      if (!acceptedTerms) {
-        setError("Confirme que você autoriza a criação da conta.");
+        setError("Use pelo menos 8 caracteres.");
         return;
       }
     }
@@ -100,7 +85,6 @@ export function AuthPanel({
         ? await createClientAccount({
             fullName: fullName.trim(),
             phone: phone.trim(),
-            birthDate,
             email: credentials.email,
             password,
           })
@@ -116,11 +100,8 @@ export function AuthPanel({
       if (!data.session) {
         setMode("login");
         onModeChange?.("login");
-        setMessage(
-          "Cadastro criado com segurança. Confira seu e-mail para confirmar a conta e depois entre com sua senha.",
-        );
+        setMessage("Cadastro criado. Entre com seu e-mail e senha.");
         setPassword("");
-        setConfirmPassword("");
         return;
       }
       finishAuthentication("client");
@@ -175,7 +156,7 @@ export function AuthPanel({
         <p className="mt-3 text-sm text-muted-foreground">
           {mode === "login"
             ? "Use seu e-mail e senha cadastrados."
-            : "Preencha seus dados para agendar pelo site."}
+            : "Nome, WhatsApp, e-mail e uma senha de 8 caracteres."}
         </p>
       </div>
 
@@ -246,7 +227,7 @@ export function AuthPanel({
           <div className="grid gap-4">
             <div>
               <label className="text-xs font-semibold text-muted-foreground" htmlFor="phone">
-                Telefone
+                WhatsApp
               </label>
               <input
                 id="phone"
@@ -257,21 +238,6 @@ export function AuthPanel({
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
                 className={inputClass}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground" htmlFor="birthDate">
-                Data de nascimento
-              </label>
-              <input
-                id="birthDate"
-                type="date"
-                required
-                autoComplete="bday"
-                max={new Date().toISOString().slice(0, 10)}
-                value={birthDate}
-                onChange={(event) => setBirthDate(event.target.value)}
-                className={`${inputClass} appearance-none`}
               />
             </div>
           </div>
@@ -330,47 +296,18 @@ export function AuthPanel({
               {showPassword ? "Ocultar" : "Mostrar"}
             </button>
           </div>
-          {isSignup ? <PasswordMeter password={password} /> : null}
-        </div>
-
-        {isSignup ? (
-          <div>
-            <label
-              className="text-xs font-semibold text-muted-foreground"
-              htmlFor="confirmPassword"
+          {isSignup ? (
+            <p
+              className={`mt-2 text-[11px] ${
+                password.length >= minimumPasswordLength
+                  ? "text-emerald-400"
+                  : "text-muted-foreground"
+              }`}
             >
-              Confirmar senha
-            </label>
-            <input
-              id="confirmPassword"
-              type={showPassword ? "text" : "password"}
-              autoComplete="new-password"
-              required
-              minLength={minimumPasswordLength}
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className={inputClass}
-            />
-            {confirmPassword && confirmPassword !== password ? (
-              <p className="mt-1.5 text-[11px] text-destructive">As senhas ainda não conferem.</p>
-            ) : null}
-          </div>
-        ) : null}
-
-        {isSignup ? (
-          <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-muted/40 p-3.5 text-xs leading-relaxed text-muted-foreground transition hover:border-[color:var(--gold)]/50">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(event) => setAcceptedTerms(event.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--gold)]"
-            />
-            <span>
-              Confirmo que desejo criar minha conta de cliente. Acessos de barbeiro e proprietário
-              são liberados pela administração.
-            </span>
-          </label>
-        ) : null}
+              Mínimo de 8 caracteres.
+            </p>
+          ) : null}
+        </div>
 
         {error ? (
           <div
@@ -395,7 +332,7 @@ export function AuthPanel({
           className={buttonClasses({ size: "lg", className: "w-full" })}
         >
           {loading ? <Loader2 className="animate-spin" /> : <Lock />}
-          {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta segura"}
+          {loading ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta"}
         </button>
       </form>
 
@@ -419,53 +356,6 @@ export function AuthPanel({
   );
 }
 
-function PasswordMeter({ password }: { password: string }) {
-  const checks = [
-    { label: "12+ caracteres", ok: password.length >= minimumPasswordLength },
-    { label: "Maiúscula", ok: /[A-Z]/.test(password) },
-    { label: "Minúscula", ok: /[a-z]/.test(password) },
-    { label: "Número", ok: /\d/.test(password) },
-    { label: "Símbolo", ok: /[^A-Za-z0-9]/.test(password) },
-  ];
-  const score = checks.filter((check) => check.ok).length;
-
-  return (
-    <div className="mt-2.5">
-      <div className="flex gap-1">
-        {checks.map((check, index) => (
-          <span
-            key={check.label}
-            className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-              index < score
-                ? score === checks.length
-                  ? "bg-emerald-500"
-                  : "bg-[color:var(--gold)]"
-                : "bg-border"
-            }`}
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
-        {checks.map((check) => (
-          <span
-            key={check.label}
-            className={`inline-flex items-center gap-1 ${
-              check.ok ? "text-emerald-400" : "text-muted-foreground"
-            }`}
-          >
-            {check.ok ? (
-              <Check size={11} strokeWidth={2.6} />
-            ) : (
-              <span className="h-1 w-1 rounded-full bg-current" />
-            )}
-            {check.label}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function getAuthMessage(message: string) {
   const normalized = message.toLowerCase();
   if (
@@ -485,7 +375,7 @@ function getAuthMessage(message: string) {
     return "Confira o endereço de e-mail informado.";
   }
   if (normalized.includes("invalid login credentials")) return "E-mail ou senha incorretos.";
-  if (normalized.includes("password")) return "A senha não atende aos requisitos de segurança.";
+  if (normalized.includes("password")) return "A senha deve ter pelo menos 8 caracteres.";
   if (normalized.includes("email"))
     return "Não foi possível usar este e-mail. Confira e tente novamente.";
   return "Não foi possível concluir a operação. Tente novamente.";
@@ -494,13 +384,11 @@ function getAuthMessage(message: string) {
 async function createClientAccount({
   fullName,
   phone,
-  birthDate,
   email,
   password,
 }: {
   fullName: string;
   phone: string;
-  birthDate: string;
   email: string;
   password: string;
 }) {
@@ -508,7 +396,7 @@ async function createClientAccount({
   return supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName, phone, birth_date: birthDate } },
+    options: { data: { full_name: fullName, phone } },
   });
 }
 

@@ -24,18 +24,12 @@ test("login and signup remain usable while the backend is unavailable", async ({
   await page.getByRole("button", { name: "Criar conta", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Crie sua conta" })).toBeVisible();
   await expect(page.getByLabel("Nome")).toBeVisible();
-  await expect(page.getByLabel("Telefone")).toBeVisible();
-  await expect(page.getByLabel("Data de nascimento")).toBeVisible();
-  await expect(page.getByLabel("Data de nascimento")).toHaveAttribute("required", "");
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const dateWidth = document.getElementById("birthDate")?.getBoundingClientRect().width ?? 0;
-        const emailWidth = document.getElementById("email")?.getBoundingClientRect().width ?? 0;
-        return Math.abs(dateWidth - emailWidth) <= 1;
-      }),
-    )
-    .toBe(true);
+  await expect(page.getByLabel("WhatsApp")).toBeVisible();
+  await expect(page.getByLabel("Data de nascimento")).toHaveCount(0);
+  await expect(page.getByLabel("Confirmar senha")).toHaveCount(0);
+  await expect(page.locator('input[type="checkbox"]')).toHaveCount(0);
+  await expect(page.getByLabel("Senha", { exact: true })).toHaveAttribute("minlength", "8");
+  await expect(page.getByText("Mínimo de 8 caracteres.")).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(

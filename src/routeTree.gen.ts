@@ -9,55 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetPasswordRouteImport } from './routes/set-password'
-import { Route as OwnerRouteImport } from './routes/owner'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ClientRouteImport } from './routes/client'
-import { Route as BarberRouteImport } from './routes/barber'
-import { Route as AgendarRouteImport } from './routes/agendar'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as OwnerIndexRouteImport } from './routes/owner/index'
+import { Route as AgendarRouteImport } from './routes/agendar'
+import { Route as BarberRouteImport } from './routes/barber'
+import { Route as ClientRouteImport } from './routes/client'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OwnerRouteImport } from './routes/owner'
+import { Route as SetPasswordRouteImport } from './routes/set-password'
 import { Route as BarberIndexRouteImport } from './routes/barber/index'
-import { Route as OwnerSettingsRouteImport } from './routes/owner/settings'
-import { Route as OwnerServicesRouteImport } from './routes/owner/services'
-import { Route as OwnerReportsRouteImport } from './routes/owner/reports'
-import { Route as OwnerProductsRouteImport } from './routes/owner/products'
-import { Route as OwnerFinancialRouteImport } from './routes/owner/financial'
-import { Route as OwnerEmployeesRouteImport } from './routes/owner/employees'
-import { Route as OwnerCustomersRouteImport } from './routes/owner/customers'
-import { Route as OwnerAppointmentsRouteImport } from './routes/owner/appointments'
-import { Route as ClientProfileRouteImport } from './routes/client/profile'
-import { Route as ClientProductsRouteImport } from './routes/client/products'
-import { Route as ClientHistoryRouteImport } from './routes/client/history'
-import { Route as ClientBookRouteImport } from './routes/client/book'
-import { Route as BarberScheduleRouteImport } from './routes/barber/schedule'
-import { Route as BarberRevenueRouteImport } from './routes/barber/revenue'
-import { Route as BarberProfileRouteImport } from './routes/barber/profile'
 import { Route as BarberHistoryRouteImport } from './routes/barber/history'
+import { Route as BarberProfileRouteImport } from './routes/barber/profile'
+import { Route as BarberRevenueRouteImport } from './routes/barber/revenue'
+import { Route as BarberScheduleRouteImport } from './routes/barber/schedule'
+import { Route as ClientBookRouteImport } from './routes/client/book'
+import { Route as ClientHistoryRouteImport } from './routes/client/history'
+import { Route as ClientProductsRouteImport } from './routes/client/products'
+import { Route as ClientProfileRouteImport } from './routes/client/profile'
+import { Route as OwnerIndexRouteImport } from './routes/owner/index'
+import { Route as OwnerAppointmentsRouteImport } from './routes/owner/appointments'
+import { Route as OwnerCustomersRouteImport } from './routes/owner/customers'
+import { Route as OwnerEmployeesRouteImport } from './routes/owner/employees'
+import { Route as OwnerFinancialRouteImport } from './routes/owner/financial'
+import { Route as OwnerMonthlyRouteImport } from './routes/owner/monthly'
+import { Route as OwnerProductsRouteImport } from './routes/owner/products'
+import { Route as OwnerReportsRouteImport } from './routes/owner/reports'
+import { Route as OwnerServicesRouteImport } from './routes/owner/services'
+import { Route as OwnerSettingsRouteImport } from './routes/owner/settings'
 
-const SetPasswordRoute = SetPasswordRouteImport.update({
-  id: '/set-password',
-  path: '/set-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OwnerRoute = OwnerRouteImport.update({
-  id: '/owner',
-  path: '/owner',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ClientRoute = ClientRouteImport.update({
-  id: '/client',
-  path: '/client',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BarberRoute = BarberRouteImport.update({
-  id: '/barber',
-  path: '/barber',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgendarRoute = AgendarRouteImport.update({
@@ -65,89 +46,39 @@ const AgendarRoute = AgendarRouteImport.update({
   path: '/agendar',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const BarberRoute = BarberRouteImport.update({
+  id: '/barber',
+  path: '/barber',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OwnerIndexRoute = OwnerIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => OwnerRoute,
+const ClientRoute = ClientRouteImport.update({
+  id: '/client',
+  path: '/client',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRoute = OwnerRouteImport.update({
+  id: '/owner',
+  path: '/owner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SetPasswordRoute = SetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const BarberIndexRoute = BarberIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => BarberRoute,
 } as any)
-const OwnerSettingsRoute = OwnerSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const OwnerServicesRoute = OwnerServicesRouteImport.update({
-  id: '/services',
-  path: '/services',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const OwnerReportsRoute = OwnerReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const OwnerProductsRoute = OwnerProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const OwnerFinancialRoute = OwnerFinancialRouteImport.update({
-  id: '/financial',
-  path: '/financial',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const OwnerEmployeesRoute = OwnerEmployeesRouteImport.update({
-  id: '/employees',
-  path: '/employees',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const OwnerCustomersRoute = OwnerCustomersRouteImport.update({
-  id: '/customers',
-  path: '/customers',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const OwnerAppointmentsRoute = OwnerAppointmentsRouteImport.update({
-  id: '/appointments',
-  path: '/appointments',
-  getParentRoute: () => OwnerRoute,
-} as any)
-const ClientProfileRoute = ClientProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => ClientRoute,
-} as any)
-const ClientProductsRoute = ClientProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
-  getParentRoute: () => ClientRoute,
-} as any)
-const ClientHistoryRoute = ClientHistoryRouteImport.update({
+const BarberHistoryRoute = BarberHistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => ClientRoute,
-} as any)
-const ClientBookRoute = ClientBookRouteImport.update({
-  id: '/book',
-  path: '/book',
-  getParentRoute: () => ClientRoute,
-} as any)
-const BarberScheduleRoute = BarberScheduleRouteImport.update({
-  id: '/schedule',
-  path: '/schedule',
-  getParentRoute: () => BarberRoute,
-} as any)
-const BarberRevenueRoute = BarberRevenueRouteImport.update({
-  id: '/revenue',
-  path: '/revenue',
   getParentRoute: () => BarberRoute,
 } as any)
 const BarberProfileRoute = BarberProfileRouteImport.update({
@@ -155,10 +86,85 @@ const BarberProfileRoute = BarberProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => BarberRoute,
 } as any)
-const BarberHistoryRoute = BarberHistoryRouteImport.update({
+const BarberRevenueRoute = BarberRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => BarberRoute,
+} as any)
+const BarberScheduleRoute = BarberScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
+  getParentRoute: () => BarberRoute,
+} as any)
+const ClientBookRoute = ClientBookRouteImport.update({
+  id: '/book',
+  path: '/book',
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientHistoryRoute = ClientHistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => BarberRoute,
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientProductsRoute = ClientProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => ClientRoute,
+} as any)
+const ClientProfileRoute = ClientProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ClientRoute,
+} as any)
+const OwnerIndexRoute = OwnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerAppointmentsRoute = OwnerAppointmentsRouteImport.update({
+  id: '/appointments',
+  path: '/appointments',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerCustomersRoute = OwnerCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerEmployeesRoute = OwnerEmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerFinancialRoute = OwnerFinancialRouteImport.update({
+  id: '/financial',
+  path: '/financial',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerMonthlyRoute = OwnerMonthlyRouteImport.update({
+  id: '/monthly',
+  path: '/monthly',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerProductsRoute = OwnerProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerReportsRoute = OwnerReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerServicesRoute = OwnerServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerSettingsRoute = OwnerSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => OwnerRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/owner/customers': typeof OwnerCustomersRoute
   '/owner/employees': typeof OwnerEmployeesRoute
   '/owner/financial': typeof OwnerFinancialRoute
+  '/owner/monthly': typeof OwnerMonthlyRoute
   '/owner/products': typeof OwnerProductsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/services': typeof OwnerServicesRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/owner/customers': typeof OwnerCustomersRoute
   '/owner/employees': typeof OwnerEmployeesRoute
   '/owner/financial': typeof OwnerFinancialRoute
+  '/owner/monthly': typeof OwnerMonthlyRoute
   '/owner/products': typeof OwnerProductsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/services': typeof OwnerServicesRoute
@@ -234,6 +242,7 @@ export interface FileRoutesById {
   '/owner/customers': typeof OwnerCustomersRoute
   '/owner/employees': typeof OwnerEmployeesRoute
   '/owner/financial': typeof OwnerFinancialRoute
+  '/owner/monthly': typeof OwnerMonthlyRoute
   '/owner/products': typeof OwnerProductsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/services': typeof OwnerServicesRoute
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
     | '/owner/customers'
     | '/owner/employees'
     | '/owner/financial'
+    | '/owner/monthly'
     | '/owner/products'
     | '/owner/reports'
     | '/owner/services'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/owner/customers'
     | '/owner/employees'
     | '/owner/financial'
+    | '/owner/monthly'
     | '/owner/products'
     | '/owner/reports'
     | '/owner/services'
@@ -315,6 +326,7 @@ export interface FileRouteTypes {
     | '/owner/customers'
     | '/owner/employees'
     | '/owner/financial'
+    | '/owner/monthly'
     | '/owner/products'
     | '/owner/reports'
     | '/owner/services'
@@ -335,39 +347,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/set-password': {
-      id: '/set-password'
-      path: '/set-password'
-      fullPath: '/set-password'
-      preLoaderRoute: typeof SetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/owner': {
-      id: '/owner'
-      path: '/owner'
-      fullPath: '/owner'
-      preLoaderRoute: typeof OwnerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/client': {
-      id: '/client'
-      path: '/client'
-      fullPath: '/client'
-      preLoaderRoute: typeof ClientRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/barber': {
-      id: '/barber'
-      path: '/barber'
-      fullPath: '/barber'
-      preLoaderRoute: typeof BarberRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agendar': {
@@ -377,19 +361,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgendarRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/barber': {
+      id: '/barber'
+      path: '/barber'
+      fullPath: '/barber'
+      preLoaderRoute: typeof BarberRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/owner/': {
-      id: '/owner/'
-      path: '/'
-      fullPath: '/owner/'
-      preLoaderRoute: typeof OwnerIndexRouteImport
-      parentRoute: typeof OwnerRoute
+    '/client': {
+      id: '/client'
+      path: '/client'
+      fullPath: '/client'
+      preLoaderRoute: typeof ClientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner': {
+      id: '/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof OwnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/set-password': {
+      id: '/set-password'
+      path: '/set-password'
+      fullPath: '/set-password'
+      preLoaderRoute: typeof SetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/barber/': {
       id: '/barber/'
@@ -398,102 +403,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberIndexRouteImport
       parentRoute: typeof BarberRoute
     }
-    '/owner/settings': {
-      id: '/owner/settings'
-      path: '/settings'
-      fullPath: '/owner/settings'
-      preLoaderRoute: typeof OwnerSettingsRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/owner/services': {
-      id: '/owner/services'
-      path: '/services'
-      fullPath: '/owner/services'
-      preLoaderRoute: typeof OwnerServicesRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/owner/reports': {
-      id: '/owner/reports'
-      path: '/reports'
-      fullPath: '/owner/reports'
-      preLoaderRoute: typeof OwnerReportsRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/owner/products': {
-      id: '/owner/products'
-      path: '/products'
-      fullPath: '/owner/products'
-      preLoaderRoute: typeof OwnerProductsRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/owner/financial': {
-      id: '/owner/financial'
-      path: '/financial'
-      fullPath: '/owner/financial'
-      preLoaderRoute: typeof OwnerFinancialRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/owner/employees': {
-      id: '/owner/employees'
-      path: '/employees'
-      fullPath: '/owner/employees'
-      preLoaderRoute: typeof OwnerEmployeesRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/owner/customers': {
-      id: '/owner/customers'
-      path: '/customers'
-      fullPath: '/owner/customers'
-      preLoaderRoute: typeof OwnerCustomersRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/owner/appointments': {
-      id: '/owner/appointments'
-      path: '/appointments'
-      fullPath: '/owner/appointments'
-      preLoaderRoute: typeof OwnerAppointmentsRouteImport
-      parentRoute: typeof OwnerRoute
-    }
-    '/client/profile': {
-      id: '/client/profile'
-      path: '/profile'
-      fullPath: '/client/profile'
-      preLoaderRoute: typeof ClientProfileRouteImport
-      parentRoute: typeof ClientRoute
-    }
-    '/client/products': {
-      id: '/client/products'
-      path: '/products'
-      fullPath: '/client/products'
-      preLoaderRoute: typeof ClientProductsRouteImport
-      parentRoute: typeof ClientRoute
-    }
-    '/client/history': {
-      id: '/client/history'
+    '/barber/history': {
+      id: '/barber/history'
       path: '/history'
-      fullPath: '/client/history'
-      preLoaderRoute: typeof ClientHistoryRouteImport
-      parentRoute: typeof ClientRoute
-    }
-    '/client/book': {
-      id: '/client/book'
-      path: '/book'
-      fullPath: '/client/book'
-      preLoaderRoute: typeof ClientBookRouteImport
-      parentRoute: typeof ClientRoute
-    }
-    '/barber/schedule': {
-      id: '/barber/schedule'
-      path: '/schedule'
-      fullPath: '/barber/schedule'
-      preLoaderRoute: typeof BarberScheduleRouteImport
-      parentRoute: typeof BarberRoute
-    }
-    '/barber/revenue': {
-      id: '/barber/revenue'
-      path: '/revenue'
-      fullPath: '/barber/revenue'
-      preLoaderRoute: typeof BarberRevenueRouteImport
+      fullPath: '/barber/history'
+      preLoaderRoute: typeof BarberHistoryRouteImport
       parentRoute: typeof BarberRoute
     }
     '/barber/profile': {
@@ -503,12 +417,117 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberProfileRouteImport
       parentRoute: typeof BarberRoute
     }
-    '/barber/history': {
-      id: '/barber/history'
-      path: '/history'
-      fullPath: '/barber/history'
-      preLoaderRoute: typeof BarberHistoryRouteImport
+    '/barber/revenue': {
+      id: '/barber/revenue'
+      path: '/revenue'
+      fullPath: '/barber/revenue'
+      preLoaderRoute: typeof BarberRevenueRouteImport
       parentRoute: typeof BarberRoute
+    }
+    '/barber/schedule': {
+      id: '/barber/schedule'
+      path: '/schedule'
+      fullPath: '/barber/schedule'
+      preLoaderRoute: typeof BarberScheduleRouteImport
+      parentRoute: typeof BarberRoute
+    }
+    '/client/book': {
+      id: '/client/book'
+      path: '/book'
+      fullPath: '/client/book'
+      preLoaderRoute: typeof ClientBookRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/history': {
+      id: '/client/history'
+      path: '/history'
+      fullPath: '/client/history'
+      preLoaderRoute: typeof ClientHistoryRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/products': {
+      id: '/client/products'
+      path: '/products'
+      fullPath: '/client/products'
+      preLoaderRoute: typeof ClientProductsRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/client/profile': {
+      id: '/client/profile'
+      path: '/profile'
+      fullPath: '/client/profile'
+      preLoaderRoute: typeof ClientProfileRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/owner/': {
+      id: '/owner/'
+      path: '/'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof OwnerIndexRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/appointments': {
+      id: '/owner/appointments'
+      path: '/appointments'
+      fullPath: '/owner/appointments'
+      preLoaderRoute: typeof OwnerAppointmentsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/customers': {
+      id: '/owner/customers'
+      path: '/customers'
+      fullPath: '/owner/customers'
+      preLoaderRoute: typeof OwnerCustomersRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/employees': {
+      id: '/owner/employees'
+      path: '/employees'
+      fullPath: '/owner/employees'
+      preLoaderRoute: typeof OwnerEmployeesRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/financial': {
+      id: '/owner/financial'
+      path: '/financial'
+      fullPath: '/owner/financial'
+      preLoaderRoute: typeof OwnerFinancialRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/monthly': {
+      id: '/owner/monthly'
+      path: '/monthly'
+      fullPath: '/owner/monthly'
+      preLoaderRoute: typeof OwnerMonthlyRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/products': {
+      id: '/owner/products'
+      path: '/products'
+      fullPath: '/owner/products'
+      preLoaderRoute: typeof OwnerProductsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/reports': {
+      id: '/owner/reports'
+      path: '/reports'
+      fullPath: '/owner/reports'
+      preLoaderRoute: typeof OwnerReportsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/services': {
+      id: '/owner/services'
+      path: '/services'
+      fullPath: '/owner/services'
+      preLoaderRoute: typeof OwnerServicesRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/settings': {
+      id: '/owner/settings'
+      path: '/settings'
+      fullPath: '/owner/settings'
+      preLoaderRoute: typeof OwnerSettingsRouteImport
+      parentRoute: typeof OwnerRoute
     }
   }
 }
@@ -554,6 +573,7 @@ interface OwnerRouteChildren {
   OwnerCustomersRoute: typeof OwnerCustomersRoute
   OwnerEmployeesRoute: typeof OwnerEmployeesRoute
   OwnerFinancialRoute: typeof OwnerFinancialRoute
+  OwnerMonthlyRoute: typeof OwnerMonthlyRoute
   OwnerProductsRoute: typeof OwnerProductsRoute
   OwnerReportsRoute: typeof OwnerReportsRoute
   OwnerServicesRoute: typeof OwnerServicesRoute
@@ -566,6 +586,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerCustomersRoute: OwnerCustomersRoute,
   OwnerEmployeesRoute: OwnerEmployeesRoute,
   OwnerFinancialRoute: OwnerFinancialRoute,
+  OwnerMonthlyRoute: OwnerMonthlyRoute,
   OwnerProductsRoute: OwnerProductsRoute,
   OwnerReportsRoute: OwnerReportsRoute,
   OwnerServicesRoute: OwnerServicesRoute,

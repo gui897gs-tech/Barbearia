@@ -48,7 +48,7 @@ function SetPasswordPage() {
       return;
     }
     if (!isStrongPassword(password)) {
-      setError("Use 12 caracteres com maiuscula, minuscula, numero e simbolo.");
+      setError("Use pelo menos 8 caracteres.");
       return;
     }
     if (password !== confirmation) {
